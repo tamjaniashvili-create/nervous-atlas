@@ -1,0 +1,171 @@
+<title>ნერვული ატლასი</title>
+<meta name="description" content="ადამიანის ნერვული სისტემის რეალისტური 3D ატლასი: ნორმა და პათოლოგიის განვითარების მექანიზმები.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600&family=Noto+Serif+Georgian:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* single deliberate look: a dissection stage — blue-black ground, bone-white ink, myelin gold */
+:root{
+  color-scheme:dark;
+  --stage:#0b0f14; --stage2:#141b23;
+  --panel:rgba(17,23,30,.86); --panel-solid:#121820; --line:rgba(236,230,218,.10); --line2:rgba(236,230,218,.18);
+  --ink:#ece6da; --ink2:#b9b2a5; --muted:#8a9199;
+  --myelin:#e6c46e; --myelin-dim:rgba(230,196,110,.14);
+  --lesion:#e2574c; --amber:#e9a23b; --blue:#6b9be0; --green:#63b57d; --grey:#8c8f94;
+  --r:10px;
+  --serif:"Noto Serif Georgian","Noto Sans Georgian",Georgia,serif;
+  --sans:"Noto Sans Georgian",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--ink);font:14px/1.5 var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;outline:none}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--myelin);outline-offset:2px}
+a{color:var(--myelin)}
+
+/* ---------- top bar ---------- */
+.top{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;align-items:center;gap:18px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 18px 10px;background:linear-gradient(180deg,rgba(11,15,20,.92),rgba(11,15,20,0));pointer-events:none}
+.top>*{pointer-events:auto}
+.brand{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.brand b{font:600 19px/1.1 var(--serif);letter-spacing:.2px;white-space:nowrap}
+.brand span{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.mode{display:flex;background:rgba(236,230,218,.06);border:1px solid var(--line2);border-radius:999px;padding:3px;gap:2px}
+.mode button{border:0;background:transparent;padding:6px 16px;border-radius:999px;cursor:pointer;font-weight:500;color:var(--ink2);white-space:nowrap}
+.mode button[aria-pressed="true"]{background:var(--ink);color:#11161c}
+.mode button[data-m="patho"][aria-pressed="true"]{background:var(--lesion);color:#fff}
+.top .sp{flex:1}
+.toplinks{display:flex;gap:14px;align-items:center;font-size:12.5px}
+.toplinks a{color:var(--ink2);text-decoration:none;border-bottom:1px solid var(--line2)}
+.toplinks a:hover{color:var(--ink)}
+
+/* ---------- panels ---------- */
+.panel{position:fixed;z-index:4;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+#left{left:16px;top:74px;bottom:16px;width:268px;display:flex;flex-direction:column;overflow:hidden}
+#right{right:16px;top:74px;bottom:16px;width:372px;display:flex;flex-direction:column;overflow:hidden}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 8px}
+.ph h2{margin:0;font:600 12px/1 var(--sans);letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
+.scroll{overflow:auto;padding:0 10px 14px;flex:1;scrollbar-width:thin;scrollbar-color:rgba(236,230,218,.2) transparent}
+.cbtn{display:none;border:0;background:transparent;cursor:pointer;color:var(--ink2);font-size:18px;line-height:1;padding:4px 6px;border-radius:6px}
+
+/* view list (norm) */
+.vlist{display:flex;flex-direction:column;gap:2px}
+.vitem{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;text-align:left;border:0;background:transparent;padding:9px 8px;border-radius:9px;cursor:pointer}
+.vitem:hover{background:rgba(236,230,218,.05)}
+.vitem[aria-current="true"]{background:var(--myelin-dim)}
+.vitem .dot{width:22px;height:22px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;font:500 10.5px var(--mono);color:var(--muted)}
+.vitem[aria-current="true"] .dot{border-color:var(--myelin);color:var(--myelin)}
+.vitem b{display:block;font-weight:500;font-size:13.5px}
+.vitem small{display:block;color:var(--muted);font-size:11.5px;line-height:1.35;margin-top:1px}
+.layers{display:flex;flex-wrap:wrap;gap:6px;padding:10px 8px 0;border-top:1px solid var(--line);margin-top:10px}
+.layers h3{width:100%;margin:0 0 2px;font:600 11px var(--sans);letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.chip{border:1px solid var(--line2);background:transparent;border-radius:999px;padding:4px 11px;font-size:12px;cursor:pointer;color:var(--ink2)}
+.chip[aria-pressed="true"]{border-color:var(--myelin);color:var(--ink);background:var(--myelin-dim)}
+
+/* nosology list */
+.search{margin:0 6px 8px;display:block;width:calc(100% - 12px);box-sizing:border-box;background:rgba(236,230,218,.05);border:1px solid var(--line2);border-radius:9px;padding:8px 11px;color:var(--ink);font:inherit}
+.ngrp{margin:10px 8px 4px;font:600 11px var(--sans);letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.nitem{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;width:100%;text-align:left;border:0;background:transparent;padding:8px;border-radius:9px;cursor:pointer}
+.nitem:hover{background:rgba(236,230,218,.05)}
+.nitem[aria-current="true"]{background:rgba(226,87,76,.14)}
+.nitem b{font-weight:500;font-size:13px;line-height:1.3}
+.icd{font:500 10.5px var(--mono);color:var(--ink2);border:1px solid var(--line2);border-radius:5px;padding:1px 5px;white-space:nowrap}
+
+/* right card */
+.card-h{padding:16px 18px 10px;border-bottom:1px solid var(--line)}
+.eyebrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:500 11px var(--mono);color:var(--muted);letter-spacing:.3px}
+.card-h h1{margin:6px 0 2px;font:600 20px/1.25 var(--serif);text-wrap:balance}
+.card-h .en{color:var(--ink2);font-size:12.5px}
+.sec{padding:14px 18px 4px}
+.sec h3{margin:0 0 8px;font:600 11px var(--sans);letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
+.sec p{margin:0 0 8px;color:var(--ink);font-size:13.5px}
+.sec ul{margin:0;padding-left:18px;color:var(--ink);font-size:13px}
+.sec li{margin:3px 0}
+.refs a{font-size:12.5px}
+.steps{display:flex;gap:6px;margin-bottom:10px}
+.steps button{flex:1;border:1px solid var(--line2);background:transparent;border-radius:8px;padding:6px 0;cursor:pointer;font:500 12px var(--mono);color:var(--ink2)}
+.steps button[aria-current="true"]{background:var(--lesion);border-color:var(--lesion);color:#fff}
+.steps button.done{border-color:rgba(226,87,76,.5);color:var(--ink)}
+.stepbox{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:rgba(0,0,0,.18)}
+.stepbox h4{margin:0 0 6px;font:600 15px/1.3 var(--serif)}
+.stepbox p{margin:0;font-size:13.5px;color:var(--ink)}
+.stepbox .note{margin-top:8px;font-size:12px;color:var(--muted)}
+.stepnav{display:flex;gap:8px;margin-top:10px}
+.btn{border:1px solid var(--line2);background:transparent;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12.5px}
+.btn.primary{background:var(--ink);color:#11161c;border-color:var(--ink);font-weight:500}
+.btn:disabled{opacity:.4;cursor:default}
+.fact{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px}
+.fact dt{color:var(--muted)} .fact dd{margin:0;font-family:var(--mono);font-size:12px}
+.disc{margin:8px 18px 16px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.empty{padding:22px 18px;color:var(--ink2)}
+.empty b{display:block;font:600 16px var(--serif);color:var(--ink);margin-bottom:6px}
+
+/* legend + hover */
+#legend{position:fixed;z-index:3;left:300px;bottom:18px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);max-width:calc(100vw - 720px)}
+#legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+#legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+#tip{position:fixed;z-index:6;pointer-events:none;background:var(--panel-solid);border:1px solid var(--line2);border-radius:8px;padding:5px 9px;font-size:12.5px;white-space:nowrap;transform:translate(12px,12px)}
+#attr{position:fixed;z-index:3;right:404px;bottom:14px;font-size:10.5px;color:var(--muted);text-align:right}
+#attr a{color:var(--muted)}
+
+/* loading */
+#load{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:var(--stage);transition:opacity .5s}
+#load.gone{opacity:0;pointer-events:none}
+.lbox{width:min(320px,80vw);text-align:center}
+.lbox b{font:600 20px var(--serif)}
+.lbox p{color:var(--muted);font-size:12.5px;margin:6px 0 14px}
+.bar{height:3px;background:rgba(236,230,218,.1);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--myelin);transition:width .2s}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---------- phone ---------- */
+@media (max-width:760px){
+  .top{gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;flex-wrap:wrap}
+  .brand span,.toplinks .hide-s{display:none}
+  .brand b{font-size:16px}
+  .mode button{padding:5px 12px;font-size:13px}
+  #left{left:10px;right:10px;top:auto;bottom:calc(10px + 42vh);width:auto;max-height:36vh}
+  #left.col{max-height:none}
+  #left.col .scroll{display:none}
+  #right{left:10px;right:10px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;height:40vh}
+  #right.col{height:auto}
+  #right.col .scroll{display:none}
+  .cbtn{display:block}
+  #legend{left:12px;right:12px;bottom:auto;top:58px;max-width:none;font-size:11px}
+  #attr{display:none}
+  .card-h{padding:12px 14px 8px}.card-h h1{font-size:17px}
+  .sec{padding:10px 14px 2px}
+}
+</style>
+
+<div id="stage" aria-label="3D მოდელი"></div>
+
+<header class="top">
+  <div class="brand"><b>ნერვული ატლასი</b><span>BodyParts3D · რეალური ანატომიური გეომეტრია</span></div>
+  <div class="mode" role="group" aria-label="რეჟიმი">
+    <button type="button" data-m="norm" aria-pressed="true">ნორმა</button>
+    <button type="button" data-m="patho" aria-pressed="false">პათოლოგია</button>
+  </div>
+  <div class="sp"></div>
+  <nav class="toplinks">
+    <a href="https://nervous-atlas.vercel.app/schematic/" target="_blank" rel="noopener" class="hide-s">სქემატური ვერსია (სიგნალები, ტესტი)</a>
+  </nav>
+</header>
+
+<aside id="left" class="panel" aria-label="სია">
+  <div class="ph"><h2 id="leftTitle">ხედები</h2><button class="cbtn" id="leftC" type="button" aria-label="სიის ჩაკეცვა" aria-expanded="true">⌄</button></div>
+  <div class="scroll" id="leftBody"></div>
+</aside>
+
+<aside id="right" class="panel" aria-live="polite">
+  <div class="ph" style="position:absolute;right:4px;top:4px;padding:6px;z-index:1"><button class="cbtn" id="rightC" type="button" aria-label="ბარათის ჩაკეცვა" aria-expanded="true">⌄</button></div>
+  <div class="scroll" id="rightBody" style="padding:0"></div>
+</aside>
+
+<div id="legend"></div>
+<div id="attr">3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია</div>
+<div id="tip" hidden></div>
+<div id="load"><div class="lbox"><b>ნერვული ატლასი</b><p id="loadMsg">3D მოდელების ჩატვირთვა…</p><div class="bar"><i id="loadBar"></i></div></div></div>

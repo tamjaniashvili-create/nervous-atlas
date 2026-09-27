@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="ინტერაქტიული 3D ატლასი: ნერვული სისტემა, თავის ტვინი, ნერვ-კუნთოვანი სიგნალი და პათოლოგიები.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23C98A12'/%3E%3C/svg%3E">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>ნერვული სისტემის ატლასი</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+Georgian:wght@400;500;600&family=Noto+Serif+Georgian:wght@600;700&display=swap">
+<style>
+:root{
+  --ground:#E9ECE6; --ground-2:#DFE3DC; --panel:#FAFBF7; --line:#D5DAD2;
+  --ink:#1B2320; --muted:#5F6963; --faint:#98A19B;
+  --accent:#C98A12; --accent-ink:#FFFFFF; --accent-soft:#F5E6C4;
+  --signal:#1597D8; --signal-soft:#DCEFFA;
+  --ok:#2F7D55; --ok-soft:#DCEFE3; --warn:#9A5B00; --warn-soft:#FBEBCF; --bad:#B03A2E; --bad-soft:#F7DEDA;
+  --dark-btn:#1F2B27; --dark-btn-ink:#F4F6F1;
+  --shadow:0 1px 2px rgba(20,30,25,.06),0 8px 24px rgba(20,30,25,.08);
+  --f-display:"Noto Serif Georgian","Sylfaen",Georgia,serif;
+  --f-body:"Noto Sans Georgian","Sylfaen",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#121715; --ground-2:#171D1A; --panel:#1B2220; --line:#2C3531;
+    --ink:#E6EAE4; --muted:#A2ACA6; --faint:#6D7771;
+    --accent:#E7AE3E; --accent-ink:#1B1406; --accent-soft:#3A2F17;
+    --signal:#4FC3F7; --signal-soft:#13303D;
+    --ok:#6CC596; --ok-soft:#18342A; --warn:#E7B45A; --warn-soft:#382C14; --bad:#EE8A7E; --bad-soft:#3A1E1B;
+    --dark-btn:#E6EAE4; --dark-btn-ink:#141917;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#121715; --ground-2:#171D1A; --panel:#1B2220; --line:#2C3531;
+  --ink:#E6EAE4; --muted:#A2ACA6; --faint:#6D7771;
+  --accent:#E7AE3E; --accent-ink:#1B1406; --accent-soft:#3A2F17;
+  --signal:#4FC3F7; --signal-soft:#13303D;
+  --ok:#6CC596; --ok-soft:#18342A; --warn:#E7B45A; --warn-soft:#382C14; --bad:#EE8A7E; --bad-soft:#3A1E1B;
+  --dark-btn:#E6EAE4; --dark-btn-ink:#141917;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+}
+html,body{height:100%}
+body{background:radial-gradient(120% 90% at 50% 45%,var(--ground) 0%,var(--ground-2) 100%);background-color:var(--ground);color:var(--ink);font-family:var(--f-body);font-size:14px;overflow:hidden}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.hud{position:fixed;z-index:5}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.scroll{overflow:auto;overscroll-behavior:contain}
+
+/* header + tabs */
+#head{top:calc(16px + env(safe-area-inset-top,0px));left:22px;max-width:calc(100% - 44px);pointer-events:none}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+h1{font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1.15;margin:6px 0 2px;text-wrap:balance}
+.sub{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+#tabs{display:flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:3px;margin-top:12px;pointer-events:auto;width:max-content;max-width:100%;overflow-x:auto;box-shadow:var(--shadow)}
+#tabs button{border:0;background:none;padding:7px 13px;border-radius:9px;cursor:pointer;color:var(--muted);font-size:13px;white-space:nowrap;display:flex;align-items:center;gap:6px}
+#tabs button:hover{color:var(--ink)}
+#tabs button.on{background:var(--dark-btn);color:var(--dark-btn-ink)}
+#tabs svg{flex:none}
+
+/* top right */
+#top{top:calc(16px + env(safe-area-inset-top,0px));right:22px;display:flex;gap:8px;align-items:flex-start}
+.search{position:relative;width:270px}
+.search input{width:100%;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:0 40px 0 36px;font:inherit;box-shadow:var(--shadow)}
+.search input::placeholder{color:var(--faint)}
+.search svg{position:absolute;left:12px;top:12px;color:var(--muted)}
+.search kbd{position:absolute;right:10px;top:10px;font-family:var(--f-mono);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:1px 6px}
+#results{position:absolute;top:46px;left:0;right:0;max-height:340px;padding:6px}
+#results button{display:flex;flex-direction:column;align-items:flex-start;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:9px;cursor:pointer}
+#results button:hover,#results button.on{background:var(--accent-soft)}
+#results .en{font-size:12px;color:var(--muted)}
+#results .none{padding:10px;color:var(--muted);font-size:13px}
+.btn{height:40px;border-radius:12px;border:1px solid var(--line);background:var(--panel);padding:0 14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow);white-space:nowrap}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--dark-btn);color:var(--dark-btn-ink);border-color:transparent}
+.btn.sig{background:var(--signal);color:#fff;border-color:transparent}
+.btn.danger{background:var(--bad);color:#fff;border-color:transparent}
+.btn.sm{height:32px;padding:0 10px;font-size:12.5px;border-radius:9px;box-shadow:none}
+#sysToggle{display:none}
+
+/* left panels */
+.left{left:22px;top:178px;width:300px;max-height:calc(100% - 330px);padding:14px}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.ph b{font-weight:600}
+.ph .end{display:flex;align-items:center;gap:6px}
+.cbtn{width:28px;height:28px;border:0;border-radius:8px;background:var(--ground);cursor:pointer;display:grid;place-items:center;color:var(--muted)}
+.cbtn svg{transition:transform .2s}
+.left.collapsed .cbtn svg{transform:rotate(180deg)}
+.left.collapsed>:not(.ph){display:none!important}
+.left.collapsed .ph{margin:0}
+.count{font-family:var(--f-mono);font-size:11px;color:var(--muted);background:var(--ground);border-radius:6px;padding:2px 7px}
+.seg{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--ground);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{border:0;background:none;border-radius:8px;padding:6px 0;font-size:12px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.sys{display:grid;grid-template-columns:10px 1fr auto 34px;align-items:center;gap:9px;padding:6px 2px;cursor:pointer;border-radius:8px}
+.sys:hover{background:var(--ground)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.sys .nm{font-size:13px;line-height:1.25}
+.sys .nm em,.card em{display:block;font-style:normal;font-size:11px;color:var(--muted)}
+.sys .n{font-family:var(--f-mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sw{width:32px;height:18px;border-radius:9px;background:var(--line);position:relative;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--panel);transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.on>.sw,.sw.on{background:var(--dark-btn)}
+.on>.sw::after,.sw.on::after{transform:translateX(14px)}
+.pfoot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.link{border:0;background:none;color:var(--muted);cursor:pointer;font-size:12px;text-decoration:underline;text-underline-offset:3px}
+.switch-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--muted);cursor:pointer}
+.filter{width:100%;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--ground);color:var(--ink);padding:0 10px;font:inherit;font-size:13px;margin-bottom:8px}
+.grp{margin-top:10px}
+.grp h4{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;margin:0 0 4px}
+.card{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;width:100%;text-align:left;border:0;background:none;border-radius:9px;padding:7px 8px;cursor:pointer;line-height:1.3}
+.card:hover{background:var(--ground)}
+.card .fma{font-family:var(--f-mono);font-size:10.5px;color:var(--faint)}
+.pcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px;cursor:pointer;background:var(--panel)}
+.pcard:hover{border-color:var(--faint)}
+.pcard.on{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad) inset}
+.pcard b{display:block;font-weight:600;font-size:13.5px;line-height:1.3}
+.pcard em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:2px}
+.pnote{font-size:12px;color:var(--muted);line-height:1.5}
+
+/* explode */
+#explode{left:50%;transform:translateX(-50%);bottom:calc(46px + env(safe-area-inset-bottom,0px));width:min(360px,calc(100% - 44px));padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:center}
+#explode .lab{font-weight:600;font-size:13px}
+#explode .lab em{font-style:normal;font-weight:400;color:var(--muted);font-size:12px}
+.pct{font-family:var(--f-mono);font-size:12px;background:var(--ground);border-radius:6px;padding:2px 7px;justify-self:end;font-variant-numeric:tabular-nums}
+#explode input{grid-column:1 / 2;width:100%;accent-color:var(--dark-btn)}
+.ends{grid-column:1/2;display:flex;justify-content:space-between;font-size:11px;color:var(--faint)}
+#resetBtn{grid-column:2;grid-row:2 / 4;border:0;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--muted)}
+
+/* signal caption */
+#signal{left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));width:min(820px,calc(100% - 44px));padding:10px 12px;display:grid;gap:8px}
+#signal .row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#signal .ttl{font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px}
+#signal .ttl i{width:8px;height:8px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 4px var(--signal-soft)}
+.steps{display:flex;gap:4px;flex-wrap:wrap}
+.step{font-size:11.5px;padding:4px 9px;border-radius:999px;background:var(--ground);color:var(--faint);transition:background .2s,color .2s}
+.step.done{color:var(--ink)}
+.step.on{background:var(--signal);color:#fff}
+.step.block{background:var(--bad);color:#fff}
+#sigNote{font-size:12px;color:var(--muted)}
+
+/* view toolbar */
+#views{right:22px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:4px;padding:5px}
+#views button{width:36px;height:36px;border:0;border-radius:9px;background:none;cursor:pointer;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+#views button:hover{background:var(--ground)}
+#views button.on{background:var(--dark-btn);color:var(--dark-btn-ink)}
+
+/* info */
+.right{right:72px;top:70px;width:340px;max-height:calc(100% - 250px);padding:18px}
+.x{position:absolute;right:12px;top:12px;border:0;background:none;cursor:pointer;width:28px;height:28px;border-radius:8px;color:var(--muted);font-size:18px;line-height:1}
+.x:hover{background:var(--ground)}
+.cat{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cat i{width:18px;height:3px;border-radius:2px}
+.right h2{font-family:var(--f-display);font-size:22px;line-height:1.25;margin:8px 28px 2px 0;text-wrap:balance}
+.enname{color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.chip{font-size:11px;border-radius:999px;padding:3px 9px;display:inline-flex;align-items:center;gap:5px}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.plain{background:var(--ground);color:var(--muted)}
+.sec{margin-top:14px}
+.sec h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;margin:0 0 5px}
+.sec p{margin:0;line-height:1.6;font-size:13.5px}
+.links{display:flex;flex-wrap:wrap;gap:6px}
+.lnk{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.lnk:hover{border-color:var(--faint)}
+.lnk.bad{border-color:var(--bad);color:var(--bad)}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.meta div span{display:block;font-size:11px;color:var(--muted);margin-bottom:2px}
+.meta div b{font-family:var(--f-mono);font-weight:500;font-size:13px}
+.src{display:inline-block;margin-top:10px;font-size:12px;color:var(--muted)}
+.src a{color:inherit}
+.note{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+.actions{display:grid;gap:8px;margin-top:16px}
+.actions .btn{box-shadow:none}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* quiz */
+#quiz h2{font-size:20px}
+#quiz .q{color:var(--muted);font-size:13px;margin-bottom:12px}
+.opts{display:grid;gap:8px}
+.opts button{text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 12px;cursor:pointer;line-height:1.35}
+.opts button:hover:not(:disabled){border-color:var(--faint)}
+.opts button em{display:block;font-style:normal;font-size:11.5px;color:var(--muted)}
+.opts button.right{background:var(--ok-soft);border-color:var(--ok)}
+.opts button.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.qfoot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:8px}
+.score{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+/* hint */
+#hint{left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));padding:20px;z-index:20}
+#hint h2{font-family:var(--f-display);font-size:20px;margin:0 0 10px}
+#hint ol{margin:0 0 14px;padding-left:20px;display:grid;gap:8px;line-height:1.5;font-size:13.5px}
+
+#tip{position:fixed;z-index:9;pointer-events:none;background:var(--dark-btn);color:var(--dark-btn-ink);font-size:12px;padding:6px 10px;border-radius:8px;white-space:nowrap;transform:translate(12px,12px)}
+#tip em{font-style:normal;opacity:.7;margin-left:6px}
+#foot{left:22px;right:22px;bottom:calc(14px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;gap:16px;font-size:11.5px;color:var(--muted);pointer-events:none}
+#foot span{max-width:48%}
+#loading{position:fixed;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13px;z-index:1}
+
+@media (max-width:1180px){ .right{right:22px;top:auto;bottom:210px;max-height:46%} #views{top:auto;bottom:210px;transform:none;flex-direction:row;right:auto;left:22px} }
+@media (max-width:760px){
+  #head{left:12px;right:12px;max-width:none;top:calc(8px + env(safe-area-inset-top,0px))}
+  .eyebrow,.sub{display:none}
+  h1{font-size:18px;margin:0 0 2px}
+  #tabs{margin-top:6px}
+  #tabs button{padding:6px 10px;font-size:12.5px}
+  #top{top:auto;bottom:calc(62px + env(safe-area-inset-bottom,0px));left:12px;right:12px}
+  .search{flex:1;width:auto}
+  .search input,.btn{height:36px}
+  .search svg{top:10px}.search kbd{top:8px}
+  #quizBtn{padding:0 10px}
+  #sysToggle{display:inline-flex}
+  .left{left:12px;right:12px;width:auto;top:auto;bottom:calc(106px + env(safe-area-inset-bottom,0px));max-height:40%;padding:12px}
+  #systems{display:none}
+  #systems.open{display:block}
+  #views{display:none}
+  #explode{bottom:calc(10px + env(safe-area-inset-bottom,0px));width:calc(100% - 24px);padding:8px 12px;grid-template-columns:auto 1fr auto auto;gap:10px}
+  #explode .lab{order:1}#explode input{order:2;grid-column:auto}#explode .pct{order:3}#resetBtn{order:4;grid-column:auto;grid-row:auto;font-size:0;gap:0}
+  #explode .lab em,.ends{display:none}
+  #signal{bottom:calc(106px + env(safe-area-inset-bottom,0px));width:calc(100% - 24px);padding:8px 10px;gap:6px}
+  #signal .row{flex-wrap:nowrap}
+  #signal .ttl{min-width:0;font-size:12.5px}
+  #signal .ttl span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #sigBtns .btn.sm{height:30px;padding:0 8px;font-size:12px}
+  .step{display:none}.step.on,.step.block{display:inline-block}
+  #sigNote{display:none}
+  body.sig-on .left,body.sig-on .right{bottom:calc(196px + env(safe-area-inset-bottom,0px));max-height:30%}
+  .right{left:12px;right:12px;width:auto;top:auto;bottom:calc(106px + env(safe-area-inset-bottom,0px));max-height:42%;z-index:6;padding:14px}
+  .right h2{font-size:19px}
+  #results{top:auto;bottom:42px}
+  #foot{display:none}
+}
+@media (prefers-reduced-motion:reduce){ .sw,.sw::after,.step{transition:none} }
+</style>
+
+</head>
+<body>
+<div id="stage"></div>
+<div id="loading">3D მოდელი იტვირთება…</div>
+
+<header id="head" class="hud">
+  <div class="eyebrow"><i></i>ინტერაქტიული ანატომია · Interactive anatomy</div>
+  <h1>ნერვული სისტემა</h1>
+  <div class="sub" id="subline">Nervous system</div>
+  <nav id="tabs" role="tablist" aria-label="რეჟიმი">
+    <button type="button" role="tab" data-tab="body" class="on"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="4.5" r="2.5"/><path d="M12 7v7m0 0-3 7m3-7 3 7M6 10h12"/></svg>სხეული</button>
+    <button type="button" role="tab" data-tab="brain"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a2 2 0 0 0-3-1Zm6 0a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></svg>თავის ტვინი</button>
+    <button type="button" role="tab" data-tab="patho"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg>პათოლოგიები</button>
+    <button type="button" role="tab" data-tab="list"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>სია</button>
+  </nav>
+</header>
+
+<div id="top" class="hud">
+  <button class="btn" id="sysToggle" type="button" aria-expanded="false">სისტემები</button>
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="სტრუქტურის ძიება · Search" autocomplete="off" aria-label="სტრუქტურის ძიება">
+    <kbd>/</kbd>
+    <div id="results" class="panel scroll" hidden></div>
+  </div>
+  <button class="btn primary" id="quizBtn" type="button">ვიქტორინა</button>
+</div>
+
+<aside id="systems" class="hud panel left scroll" aria-label="სისტემები">
+  <div class="ph"><b>სისტემები</b><span class="end"><span class="count" id="catCount"></span><button class="cbtn" type="button" aria-label="ჩაკეცვა / გაშლა" aria-expanded="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></span></div>
+  <div class="seg" role="group" aria-label="სწრაფი არჩევა">
+    <button type="button" data-preset="all" class="on">ყველა</button>
+    <button type="button" data-preset="cns">ცნს</button>
+    <button type="button" data-preset="pns">პნს + კუნთები</button>
+  </div>
+  <div id="sysList"></div>
+  <div class="switch-row" id="outlineRow" role="switch" tabindex="0" aria-checked="true"><span>სხეულის კონტური</span><span class="sw on" id="outlineSw"></span></div>
+  <div class="switch-row" id="xrayRow" role="switch" tabindex="0" aria-checked="true" hidden><span>გამჭვირვალე ქერქი (ღრმა სტრუქტურების სანახავად)</span><span class="sw on" id="xraySw"></span></div>
+  <div class="pfoot"><span id="visCount"></span><button class="link" id="hideAll" type="button">ყველას დამალვა</button></div>
+</aside>
+
+<aside id="list" class="hud panel left scroll" hidden aria-label="ყველა სტრუქტურა">
+  <div class="ph"><b>ყველა სტრუქტურა</b><span class="end"><span class="count" id="listCount"></span><button class="cbtn" type="button" aria-label="ჩაკეცვა / გაშლა" aria-expanded="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></span></div>
+  <input class="filter" id="listFilter" type="search" placeholder="გაფილტვრა…" aria-label="სიის გაფილტვრა" autocomplete="off">
+  <div id="listBody"></div>
+</aside>
+
+<aside id="patho" class="hud panel left scroll" hidden aria-label="პათოლოგიები">
+  <div class="ph"><b>პათოლოგიები</b><span class="end"><span class="count" id="pathoCount"></span><button class="cbtn" type="button" aria-label="ჩაკეცვა / გაშლა" aria-expanded="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></span></div>
+  <div class="pnote">აირჩიეთ დაზიანება: ნახავთ, სად წყდება სიგნალი და რომელი კუნთები კარგავს ფუნქციას. შეადარეთ ნორმას.</div>
+  <div id="pathoBody"></div>
+</aside>
+
+<div id="views" class="hud panel" role="toolbar" aria-label="ხედი">
+  <button type="button" data-view="front" class="on" title="წინიდან">წინ</button>
+  <button type="button" data-view="side" title="გვერდიდან">გვ.</button>
+  <button type="button" data-view="head" title="თავი">თავი</button>
+  <button type="button" data-view="back" title="უკნიდან">უკ.</button>
+</div>
+
+<div id="signal" class="hud panel" hidden aria-live="polite">
+  <div class="row"><div class="ttl"><i></i><span id="sigTitle"></span></div><div class="two" id="sigBtns"></div></div>
+  <div class="steps" id="sigSteps"></div>
+  <div id="sigNote"></div>
+</div>
+
+<div id="explode" class="hud panel">
+  <div class="lab">დაშლა <em>· სისტემების მიხედვით</em></div>
+  <span class="pct" id="pct">0 %</span>
+  <input id="ex" type="range" min="0" max="100" value="0" aria-label="დაშლის ხარისხი">
+  <button id="resetBtn" type="button" title="საწყისი მდგომარეობა"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>საწყისი</button>
+  <div class="ends"><span>აწყობილი</span><span>ჯგუფებად</span></div>
+</div>
+
+<aside id="info" class="hud panel right scroll" hidden aria-live="polite"></aside>
+<aside id="quiz" class="hud panel right" hidden aria-live="polite"></aside>
+<div id="tip" hidden></div>
+
+<div id="hint" class="hud panel" hidden role="dialog" aria-labelledby="hintTitle">
+  <h2 id="hintTitle">როგორ გამოვიყენო</h2>
+  <ol>
+    <li><b>დააწკაპუნეთ</b> ნებისმიერ ნერვზე ან კუნთზე: ნახავთ აღწერას, კლინიკურ მნიშვნელობას და დაკავშირებულ სტრუქტურებს.</li>
+    <li><b>▶ სიგნალი</b>: ნახეთ, როგორ მიდის იმპულსი ქერქიდან კუნთამდე და როგორ იკუმშება კუნთი.</li>
+    <li><b>პათოლოგიები</b>: შეადარეთ ნორმა და დაზიანება, მაგ. „ჩამოკიდებული მაჯა“ ან მაჯის არხის სინდრომი.</li>
+    <li><b>თავის ტვინი</b>: ღრმა სტრუქტურები და ქერქის ფუნქციური ზონები.</li>
+  </ol>
+  <p class="pnote" style="margin:0 0 14px">სქემატური სასწავლო მოდელი: მიმდინარეობა მიახლოებითია, კლინიკური გადაწყვეტილებისთვის არ გამოიყენება.</p>
+  <button class="btn primary" type="button" id="hintOk" style="width:100%">გასაგებია</button>
+</div>
+
+<footer id="foot" class="hud">
+  <span class="hint">გადათრევა — ბრუნვა · მარჯვენა ღილაკი — გადაადგილება · ბორბალი — მასშტაბი · დაწკაპუნება — ინფორმაცია</span>
+  <span>სქემატური სასწავლო მოდელი: მიმდინარეობა მიახლოებითია, კლინიკური გადაწყვეტილებისთვის არ გამოიყენება.</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ---------- three.js scene ---------- */
+const stage=document.getElementById("stage");
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setClearColor(0x000000,0);
+stage.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(32,1,0.01,50);
+camera.position.set(0,0.95,3.4);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.target.set(0,0.95,0);controls.enableDamping=true;controls.dampingFactor=0.08;controls.minDistance=0.1;controls.maxDistance=8;controls.screenSpacePanning=true;
+scene.add(new THREE.HemisphereLight(0xffffff,0x7d8a84,0.85));
+const key=new THREE.DirectionalLight(0xffffff,0.75);key.position.set(1.5,3,2.5);scene.add(key);
+const rim=new THREE.DirectionalLight(0xffffff,0.35);rim.position.set(-2,1,-2);scene.add(rim);
+
+function blobGeo(p){
+  const g=new THREE.SphereGeometry(1,p.fine?72:48,p.fine?48:32);
+  const pos=g.attributes.position, v=new THREE.Vector3();
+  for(let i=0;i<pos.count;i++){
+    v.fromBufferAttribute(pos,i);
+    const n=v.clone();
+    let d=0;
+    if(!p.smooth){
+      const f=p.fine?1:0.55;
+      d = p.fine ? 0.05*Math.sin(v.y*42) : f*(0.045*Math.sin(v.x*9+v.y*13)*Math.sin(v.z*11-v.y*7)+0.025*Math.sin(v.x*23+v.z*19)*Math.sin(v.y*21));
+    }
+    v.addScaledVector(n,d);
+    v.set(v.x*p.r.x+p.c.x,v.y*p.r.y+p.c.y,v.z*p.r.z+p.c.z);
+    if(p.side){ if(p.side*v.x<0.003) v.x=p.side*0.003; }
+    pos.setXYZ(i,v.x,v.y,v.z);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+function dedupe(pts){const out=[];pts.forEach(p=>{if(!out.length||out[out.length-1].distanceTo(p)>1e-4) out.push(p);});return out;}
+function tubeGeo(pts,r){
+  const curve=new THREE.CatmullRomCurve3(dedupe(pts),false,"centripetal");
+  const len=curve.getLength();
+  return {geo:new THREE.TubeGeometry(curve,Math.min(180,Math.max(12,Math.round(len*260))),r,8,false),curve};
+}
+
+const pieces=[];
+const pickables=[];
+const UP=new THREE.Vector3(0,1,0);
+STRUCTS.forEach(st=>{
+  const sides=st.paired?[-1,1]:[0];
+  sides.forEach(s=>{
+    const baseColor=new THREE.Color(st.color||CAT[st.cat].color);
+    const soft=st.cat==="brain"||st.cat==="hind"||st.cat==="deep";
+    const mat=new THREE.MeshStandardMaterial({color:baseColor.clone(),roughness:soft?0.72:st.cat==="muscle"?0.62:0.5,metalness:0.02});
+    const group=new THREE.Group();
+    let curve=null;
+    st.geo(s).forEach(part=>{
+      let mesh;
+      if(part.t==="tube"){const r=tubeGeo(part.pts,part.r);if(!curve) curve=r.curve;mesh=new THREE.Mesh(r.geo,mat);}
+      else if(part.t==="blob"){mesh=new THREE.Mesh(blobGeo(part),mat);}
+      else if(part.t==="ball"){const g=new THREE.SphereGeometry(part.r,16,12);g.translate(part.c.x,part.c.y,part.c.z);mesh=new THREE.Mesh(g,mat);}
+      else if(part.t==="spindle"){
+        const dir=part.b.clone().sub(part.a);const len=dir.length();
+        const g=new THREE.SphereGeometry(1,24,16);g.scale(part.r,len/2,part.r*part.f);
+        mesh=new THREE.Mesh(g,mat);mesh.position.copy(part.a).add(part.b).multiplyScalar(0.5);
+        mesh.quaternion.setFromUnitVectors(UP,dir.normalize());mesh.userData.kind="spindle";
+      }
+      else if(part.t==="torus"){mesh=new THREE.Mesh(new THREE.TorusGeometry(part.R,part.r,10,40),mat);mesh.position.copy(part.c);mesh.userData.kind="torus";}
+      else if(part.t==="dome"){
+        const g=new THREE.SphereGeometry(1,40,16,0,Math.PI*2,0,Math.PI/2);g.scale(part.r.x,part.r.y,part.r.z);
+        mat.side=THREE.DoubleSide;mesh=new THREE.Mesh(g,mat);mesh.position.copy(part.c);mesh.userData.kind="dome";
+      }
+      group.add(mesh);pickables.push(mesh);
+    });
+    const sideKa=s<0?"მარჯვენა":s>0?"მარცხენა":"";
+    const sideEn=s<0?"Right":s>0?"Left":"";
+    const enBase=st.en.charAt(1)===st.en.charAt(1).toLowerCase()&&isNaN(+st.en.charAt(1))?st.en.charAt(0).toLowerCase()+st.en.slice(1):st.en;
+    const piece={uid:st.id+(s<0?"-R":s>0?"-L":""),st,side:s,group,mat,baseColor,curve,
+      ka:(sideKa?sideKa+" ":"")+st.ka,en:sideEn?sideEn+" "+enBase:st.en,
+      cur:new THREE.Vector3(),tgt:new THREE.Vector3(),scale:1,visible:true};
+    group.children.forEach(m=>m.userData.piece=piece);
+    const box=new THREE.Box3().setFromObject(group);
+    piece.center=box.getCenter(new THREE.Vector3());
+    const sz=box.getSize(new THREE.Vector3());piece.maxDim=Math.max(sz.x,sz.y,sz.z,0.004);
+    scene.add(group);pieces.push(piece);
+  });
+});
+const pieceBy=(id,side)=>pieces.find(p=>p.st.id===id&&(p.side===side||p.side===0));
+
+/* body outline */
+const ghostMat=new THREE.MeshStandardMaterial({color:0x8a9891,transparent:true,opacity:0.085,depthWrite:false,roughness:1});
+const ghost=new THREE.Group();
+function gEll(c,r){const g=new THREE.SphereGeometry(1,32,20);g.scale(r.x,r.y,r.z);g.translate(c.x,c.y,c.z);ghost.add(new THREE.Mesh(g,ghostMat));}
+function gTube(pts,r){ghost.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,r,16,false),ghostMat));}
+gEll(V(0,1.635,0.005),V(0.082,0.105,0.1));gTube([V(0,1.56,-0.01),V(0,1.46,0.0)],0.05);
+gEll(V(0,1.24,0.0),V(0.17,0.25,0.11));gEll(V(0,0.95,-0.005),V(0.16,0.1,0.1));
+[-1,1].forEach(s=>{gTube([V(s*0.18,1.43,0),V(s*0.235,1.14,0),V(s*0.27,0.9,0.025)],0.036);gEll(V(s*0.28,0.82,0.032),V(0.028,0.075,0.018));
+  gTube([V(s*0.09,0.92,0),V(s*0.095,0.5,0.0),V(s*0.1,0.09,-0.01)],0.058);gEll(V(s*0.1,0.035,0.045),V(0.042,0.03,0.1));});
+scene.add(ghost);
+let ghostOn=true;
+
+/* ---------- explode group labels ---------- */
+const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const labels={};
+CATS.forEach(c=>{
+  const cv=document.createElement("canvas");cv.width=8;cv.height=8;
+  const tex=new THREE.CanvasTexture(cv);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false}));
+  sp.center.set(0,0.5);sp.renderOrder=20;sp.visible=false;scene.add(sp);
+  labels[c.id]={c,cv,tex,sp,n:-1,aspect:4,active:false,cell:0.1};
+});
+function drawLabel(L){
+  const cv=L.cv, font='600 44px "Noto Sans Georgian", Sylfaen, sans-serif';
+  let ctx=cv.getContext("2d");ctx.font=font;
+  const sub="  "+L.n;
+  const tw=ctx.measureText(L.c.ka).width, sw=ctx.measureText(sub).width;
+  cv.width=Math.ceil(44+tw+sw+16);cv.height=72;
+  ctx=cv.getContext("2d");ctx.font=font;ctx.textBaseline="middle";
+  ctx.fillStyle=L.c.color;ctx.beginPath();ctx.arc(18,37,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=cssVar("--ink")||"#1B2320";ctx.fillText(L.c.ka,40,38);
+  ctx.fillStyle=cssVar("--faint")||"#98A19B";ctx.fillText(sub,40+tw,38);
+  L.aspect=cv.width/cv.height;L.tex.needsUpdate=true;
+}
+const redrawLabels=()=>Object.values(labels).forEach(L=>{if(L.n>=0) drawLabel(L);});
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(redrawLabels);
+try{window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",redrawLabels);}catch(e){}
+
+/* ---------- state ---------- */
+const catOn=Object.fromEntries(CATS.map(c=>[c.id,true]));
+let tab="body", mode="body", xray=true, explodeTarget=0, explodeCur=0, isolated=null, selected=null, hovered=null, quiz=null, sig=null, patho=null;
+const CAT_ORDER=CATS.map(c=>c.id);
+const inMode=p=>mode==="brain"?!!CAT[p.st.cat].brain:true;
+const MODE_CFG={body:{cx:0,cy:0.95,W:2.1,H:1.75,maxCell:0.13},brain:{cx:0,cy:1.645,W:0.66,H:0.48,maxCell:0.045}};
+
+function layout(){
+  const vis=pieces.filter(p=>p.visible);
+  const groups=CAT_ORDER.map(id=>({id,items:vis.filter(p=>p.st.cat===id).sort((a,b)=>b.maxDim-a.maxDim)})).filter(g=>g.items.length);
+  Object.values(labels).forEach(L=>L.active=false);
+  if(!groups.length) return;
+  groups.forEach(g=>{g.cols=Math.max(2,Math.ceil(Math.sqrt(g.items.length*1.3)));g.rows=Math.ceil(g.items.length/g.cols);g.w=g.cols;g.h=g.rows+1;});
+  const area=groups.reduce((a,g)=>a+(g.w+1.2)*(g.h+0.8),0);
+  const rowMax=Math.max(Math.max(...groups.map(g=>g.w)),Math.sqrt(area*1.8));
+  const rows=[];let cur={items:[],w:0,h:0};
+  groups.forEach(g=>{
+    const gap=cur.items.length?1.2:0;
+    if(cur.items.length&&cur.w+gap+g.w>rowMax){rows.push(cur);cur={items:[],w:0,h:0};}
+    const x=cur.w+(cur.items.length?1.2:0);cur.items.push({g,x});cur.w=x+g.w;cur.h=Math.max(cur.h,g.h);
+  });
+  if(cur.items.length) rows.push(cur);
+  const W=Math.max(...rows.map(r=>r.w)), H=rows.reduce((a,r)=>a+r.h,0)+(rows.length-1)*0.8;
+  const cfg=MODE_CFG[mode];
+  const cell=Math.min(cfg.W/W,cfg.H/H,cfg.maxCell);
+  let y=0;
+  rows.forEach(r=>{
+    const off=(W-r.w)/2;
+    r.items.forEach(({g,x})=>{
+      const gx=off+x;
+      g.items.forEach((p,i)=>{
+        const cx=gx+(i%g.cols)+0.5, cy=y+1+Math.floor(i/g.cols)+0.5;
+        p.tgt.set(cfg.cx+(cx-W/2)*cell,cfg.cy+(H/2-cy)*cell,0);
+        p.scale=cell*0.8/p.maxDim;
+      });
+      const L=labels[g.id];L.active=true;L.cell=cell;
+      if(L.n!==g.items.length){L.n=g.items.length;drawLabel(L);}
+      L.sp.position.set(cfg.cx+(gx-W/2)*cell,cfg.cy+(H/2-(y+0.45))*cell,0);
+      L.sp.scale.set(cell*0.55*L.aspect,cell*0.55,1);
+    });
+    y+=r.h+0.8;
+  });
+}
+function refreshVisibility(){
+  pieces.forEach(p=>{p.visible=catOn[p.st.cat]&&inMode(p)&&(!isolated||isolated===p);p.group.visible=p.visible;});
+  layout();
+  document.getElementById("visCount").textContent=pieces.filter(p=>p.visible).length+" ნაწილი ჩანს";
+}
+refreshVisibility();pieces.forEach(p=>p.cur.copy(p.tgt));
+document.getElementById("subline").textContent="Nervous system · "+pieces.length+" ნაწილი · "+STRUCTS.filter(s=>!/^(sn|ic)-/.test(s.id)).length+" სტრუქტურა · "+PATHOS.length+" პათოლოგია";
+
+/* ---------- camera ---------- */
+let camTween=null;
+const VIEWS={front:[V(0,0.95,3.4),V(0,0.95,0)],back:[V(0,0.95,-3.4),V(0,0.95,0)],side:[V(3.4,0.95,0.0),V(0,0.95,0)],head:[V(0.30,1.70,0.46),V(0,1.645,-0.005)],brainfront:[V(0,1.645,0.95),V(0,1.645,0)]};
+function viewFor(v){
+  if(mode==="brain"&&v!=="brainfront"){const t=V(0,1.645,-0.005);const m={front:V(0,1.66,0.62),side:V(0.62,1.66,0),back:V(0,1.66,-0.62),head:V(0.30,1.70,0.46)};return [m[v]||m.head,t];}
+  return VIEWS[v];
+}
+function flyTo(pos,target){camTween={p0:camera.position.clone(),t0:controls.target.clone(),p1:pos.clone(),t1:target.clone(),k:0};}
+function setView(v){const [p,t]=viewFor(v);flyTo(p,t);document.querySelectorAll("#views button").forEach(b=>b.classList.toggle("on",b.dataset.view===v));}
+document.querySelectorAll("#views button").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+function frame(list,dirHint){
+  const box=new THREE.Box3();list.forEach(p=>box.expandByObject(p.group));
+  if(box.isEmpty()) return;
+  const c=box.getCenter(new THREE.Vector3());const d=Math.max(box.getSize(new THREE.Vector3()).length()*1.25,0.2);
+  const dir=(dirHint||camera.position.clone().sub(controls.target)).clone().normalize();
+  flyTo(c.clone().addScaledVector(dir,d),c);
+  document.querySelectorAll("#views button").forEach(b=>b.classList.remove("on"));
+}
+const focusPiece=p=>frame([p]);
+
+/* ---------- links between nerves and muscles ---------- */
+function related(p){
+  const out=new Set();if(!p) return out;
+  if(p.st.cat==="muscle") pieces.forEach(q=>{if(p.st.nerve.includes(q.st.id)&&(p.side===0||q.side===p.side)) out.add(q);});
+  else pieces.forEach(q=>{if(q.st.cat==="muscle"&&q.st.nerve.includes(p.st.id)&&(q.side===0||q.side===p.side)) out.add(q);});
+  return out;
+}
+const pathosFor=id=>PATHOS.filter(d=>d.chain.includes(id)||d.affected.includes(id)||d.spared.includes(id)||d.lesion.id===id);
+
+/* ---------- materials ---------- */
+const GREY=new THREE.Color("#8E9793");
+function setOpacity(p,op){const tr=op<0.999;if(p.mat.transparent!==tr){p.mat.transparent=tr;p.mat.needsUpdate=true;}p.mat.opacity=op;p.mat.depthWrite=!tr||op>0.5;}
+function baseOpacity(p){if(mode==="brain"&&p.st.cat==="brain"&&xray) return 0.2;if(p.st.cat==="muscle") return 0.92;return 1;}
+function paint(){
+  const rel=selected?related(selected):null;
+  const para=sig?sig.paralysed:null;
+  pieces.forEach(p=>{
+    const sel=p===selected||(quiz&&p===quiz.target);
+    const isRel=!!(rel&&rel.has(p));
+    const hov=p===hovered&&!quiz;
+    p.mat.color.copy(para&&para.has(p)?GREY:p.baseColor);
+    p.mat.emissive.set(sel?0x2f6fd6:isRel?0xd0452f:hov?0x6b5a2a:0x000000);
+    p.mat.emissiveIntensity=sel?0.55:isRel?0.45:hov?0.35:0;
+    let op=baseOpacity(p);
+    if(quiz&&!sel) op=0.14;
+    else if(sig&&!sig.focus.has(p)) op=Math.min(op,p.st.cat==="brain"?0.12:0.22);
+    else if(rel&&rel.size&&!sel&&!isRel&&p.st.cat!=="brain") op=Math.min(op,0.25);
+    setOpacity(p,op);
+  });
+}
+
+/* ---------- systems panel ---------- */
+const sysList=document.getElementById("sysList");
+CATS.forEach(c=>{
+  const n=pieces.filter(p=>p.st.cat===c.id).length;
+  const row=document.createElement("div");row.className="sys on";row.tabIndex=0;row.setAttribute("role","switch");row.setAttribute("aria-checked","true");row.dataset.cat=c.id;
+  row.innerHTML=`<span class="dot" style="background:${c.color}"></span><span class="nm">${c.ka}<em>${c.en}</em></span><span class="n">${n}</span><span class="sw"></span>`;
+  const toggle=()=>{catOn[c.id]=!catOn[c.id];syncSys();};
+  row.addEventListener("click",toggle);row.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle();}});
+  sysList.appendChild(row);
+});
+function syncSys(){
+  let shown=0;
+  sysList.querySelectorAll(".sys").forEach(r=>{const c=CAT[r.dataset.cat];const on=catOn[c.id];r.classList.toggle("on",on);r.setAttribute("aria-checked",on);r.hidden=mode==="brain"&&!c.brain;if(!r.hidden) shown++;});
+  document.getElementById("catCount").textContent=shown;
+  const anyOn=CATS.some(c=>catOn[c.id]);
+  document.getElementById("hideAll").textContent=anyOn?"ყველას დამალვა":"ყველას ჩვენება";
+  const allOn=CATS.every(c=>catOn[c.id]), cnsOnly=CATS.every(c=>catOn[c.id]===!!c.cns), pnsOnly=CATS.every(c=>catOn[c.id]===!c.cns);
+  document.querySelectorAll(".seg button").forEach(b=>b.classList.toggle("on",(b.dataset.preset==="all"&&allOn)||(b.dataset.preset==="cns"&&cnsOnly)||(b.dataset.preset==="pns"&&pnsOnly)));
+  if(selected&&!catOn[selected.st.cat]) select(null);
+  refreshVisibility();paint();
+}
+document.getElementById("hideAll").addEventListener("click",()=>{const anyOn=CATS.some(c=>catOn[c.id]);CATS.forEach(c=>catOn[c.id]=!anyOn);syncSys();});
+document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{
+  CATS.forEach(c=>catOn[c.id]=b.dataset.preset==="all"?true:b.dataset.preset==="cns"?!!c.cns:!c.cns);syncSys();
+}));
+function bindSwitch(rowId,swId,get,set){
+  const row=document.getElementById(rowId);
+  const f=()=>{set(!get());document.getElementById(swId).classList.toggle("on",get());row.setAttribute("aria-checked",get());};
+  row.addEventListener("click",f);row.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();f();}});
+}
+bindSwitch("outlineRow","outlineSw",()=>ghostOn,v=>{ghostOn=v;});
+bindSwitch("xrayRow","xraySw",()=>xray,v=>{xray=v;paint();});
+const sysToggle=document.getElementById("sysToggle");
+sysToggle.addEventListener("click",()=>{const o=document.getElementById("systems").classList.toggle("open");sysToggle.setAttribute("aria-expanded",o);});
+
+/* ---------- tabs & modes ---------- */
+const listEl=document.getElementById("list"), pathoEl=document.getElementById("patho"), systemsEl=document.getElementById("systems");
+const isMobile=()=>window.innerWidth<=760;
+function collapse(el,on){el.classList.toggle("collapsed",on);const b=el.querySelector(".cbtn");if(b) b.setAttribute("aria-expanded",!on);}
+[systemsEl,listEl,pathoEl].forEach(el=>{
+  const b=el.querySelector(".cbtn");
+  const t=()=>collapse(el,!el.classList.contains("collapsed"));
+  b.addEventListener("click",e=>{e.stopPropagation();t();});
+  el.querySelector(".ph b").addEventListener("click",t);
+});
+function setMode(m){
+  if(m===mode) return;
+  mode=m;
+  if(quiz) endQuiz();
+  if(sig) stopSignal();
+  if(selected&&!inMode(selected)) select(null);
+  if(isolated&&!inMode(isolated)) isolated=null;
+  document.getElementById("xrayRow").hidden=mode!=="brain";
+  document.getElementById("outlineRow").hidden=mode==="brain";
+  syncSys();
+  setView(mode==="brain"?(explodeTarget>0.25?"brainfront":"head"):"front");
+}
+function setTab(t){
+  tab=t;
+  document.querySelectorAll("#tabs button").forEach(b=>{const on=b.dataset.tab===t;b.classList.toggle("on",on);b.setAttribute("aria-selected",on);});
+  systemsEl.hidden=!(t==="body"||t==="brain");
+  listEl.hidden=t!=="list";pathoEl.hidden=t!=="patho";
+  sysToggle.hidden=!(t==="body"||t==="brain");
+  if(t!=="patho"&&patho) endPatho();
+  if(t==="body"||t==="patho") setMode("body"); else if(t==="brain") setMode("brain");
+  if(t==="patho"){collapse(pathoEl,false);renderPatho();}
+  if(t==="list"){collapse(listEl,false);buildList();}
+}
+document.querySelectorAll("#tabs button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+
+/* ---------- explode ---------- */
+const ex=document.getElementById("ex"), pct=document.getElementById("pct");
+function setExplode(v){ex.value=Math.round(v*100);explodeTarget=v;pct.textContent=ex.value+" %";}
+ex.addEventListener("input",()=>{
+  const prev=explodeTarget;setExplode(ex.value/100);
+  if(prev<0.25&&explodeTarget>=0.25) setView(mode==="brain"?"brainfront":"front");
+  if(sig&&((prev<0.05)!==(explodeTarget<0.05))) playSignal(sig.opts);
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if(quiz) endQuiz();
+  stopSignal();patho=null;setExplode(0);isolated=null;CATS.forEach(c=>catOn[c.id]=true);select(null);setTab("body");syncSys();setView("front");
+});
+
+/* ---------- info panel ---------- */
+const info=document.getElementById("info");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const colorOf=st=>st.color||CAT[st.cat].color;
+function verifyChips(st){
+  if(st.fma&&st.ta) return '<span class="chip ok" title="შემოწმდა Wikipedia-ს infobox-ით">✓ FMA · TA98 გადამოწმდა</span>';
+  if(st.fma) return '<span class="chip ok">✓ FMA გადამოწმდა</span><span class="chip plain">TA98 infobox-ში არ არის</span>';
+  if(st.ta) return '<span class="chip ok">✓ TA98 გადამოწმდა</span><span class="chip plain">FMA infobox-ში არ არის</span>';
+  return '<span class="chip warn">FMA/TA98 infobox-ში არ არის</span>';
+}
+function canSignal(p){
+  if(p.st.cat==="muscle") return [...related(p)].some(q=>q.curve);
+  return !!p.curve&&(related(p).size>0||!!CHAIN[p.st.id]);
+}
+function renderInfo(p){
+  if(!p){info.hidden=true;return;}
+  const st=p.st,c=CAT[st.cat],isM=st.cat==="muscle";
+  const rel=[...related(p)];
+  const pts=pathosFor(st.id);
+  const head=isM?"მოქმედება":(c.brain&&st.cat!=="cranial")?"ფუნქცია":"აღწერა";
+  info.innerHTML=`<button class="x" type="button" aria-label="დახურვა" id="infoX">×</button>
+  <div class="cat"><i style="background:${colorOf(st)}"></i>${esc(c.ka)}${st.num?" · "+st.num:""}</div>
+  <h2>${esc(p.ka)}</h2><div class="enname">${esc(p.en)}</div>
+  <div class="chips">${verifyChips(st)}
+    ${st.kaCheck?'<span class="chip warn" title="შეადარეთ ოფიციალურ ქართულ ანატომიურ ნომენკლატურას">ქართული ტერმინი გადასამოწმებელია</span>':""}
+    ${st.roots?`<span class="chip plain">${esc(st.roots)}</span>`:""}</div>
+  <div class="sec"><h3>${head}</h3><p>${esc(st.desc)}</p></div>
+  ${rel.length?`<div class="sec"><h3>${isM?"ინერვაცია":"აინერვირებს (მოდელში)"}</h3><div class="links">${rel.map(q=>`<button type="button" class="lnk" data-uid="${q.uid}"><span class="dot" style="background:${colorOf(q.st)}"></span>${esc(q.ka)}</button>`).join("")}</div></div>`:""}
+  <div class="sec"><h3>კლინიკური მნიშვნელობა</h3><p>${esc(st.clin)}</p></div>
+  ${pts.length?`<div class="sec"><h3>პათოლოგიები</h3><div class="links">${pts.map(d=>`<button type="button" class="lnk bad" data-patho="${d.id}">${esc(d.ka)}</button>`).join("")}</div></div>`:""}
+  <div class="meta"><div><span>FMA ID</span><b>${st.fma?"FMA"+st.fma:"—"}</b></div><div><span>TA98</span><b>${st.ta||"—"}</b></div></div>
+  ${st.generic?'<div class="note">ID ზოგად კონცეფციას ეკუთვნის; მხარის ან დონის სპეციფიკური FMA ID ჯერ არ არის მიბმული.</div>':""}
+  <span class="src">წყარო: <a href="https://en.wikipedia.org/wiki/${st.wiki}" target="_blank" rel="noopener">Wikipedia infobox ↗</a> · შემოწმდა ${VERIFIED}</span>
+  <div class="actions">
+    ${canSignal(p)?'<button class="btn sig" type="button" id="sigBtn">▶ სიგნალის ჩვენება: ქერქიდან კუნთამდე</button>':""}
+    <div class="two"><button class="btn primary" type="button" id="isoBtn">${isolated===p?"ყველას დაბრუნება":"იზოლირება"}</button>
+    <button class="btn" type="button" id="clearBtn">მოხსნა</button></div>
+  </div>`;
+  info.hidden=false;
+  document.getElementById("infoX").onclick=()=>select(null);
+  document.getElementById("clearBtn").onclick=()=>select(null);
+  document.getElementById("isoBtn").onclick=()=>{isolated=isolated===p?null:p;refreshVisibility();renderInfo(p);if(isolated) focusPiece(p);};
+  const sb=document.getElementById("sigBtn");
+  if(sb) sb.onclick=()=>{const nerve=isM?rel.find(q=>q.curve):p;playSignal({nerve});};
+  info.querySelectorAll("[data-uid]").forEach(b=>b.onclick=()=>choose(pieces.find(q=>q.uid===b.dataset.uid)));
+  info.querySelectorAll("[data-patho]").forEach(b=>b.onclick=()=>activatePatho(PATHOS.find(d=>d.id===b.dataset.patho),true));
+}
+function select(p){
+  selected=p;
+  if(!p&&isolated){isolated=null;refreshVisibility();}
+  renderInfo(p);paint();
+}
+
+/* ---------- list view ---------- */
+const listBody=document.getElementById("listBody"), listFilter=document.getElementById("listFilter");
+function norm(s){return String(s).toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g,"");}
+function buildList(){
+  const f=norm(listFilter.value.trim());let html="",count=0;
+  CATS.forEach(c=>{
+    const items=STRUCTS.filter(s=>s.cat===c.id&&(!f||norm(s.ka).includes(f)||norm(s.en).includes(f)||("fma"+(s.fma||"")).includes(f.replace(/\s/g,""))));
+    if(!items.length) return;count+=items.length;
+    html+=`<div class="grp"><h4><span class="dot" style="background:${c.color}"></span>${esc(c.ka)}</h4>${items.map(s=>`<button type="button" class="card" data-id="${s.id}"><span>${esc(s.ka)}<em>${esc(s.en)}</em></span><span class="fma">${s.fma?"FMA"+s.fma:"—"}</span></button>`).join("")}</div>`;
+  });
+  listBody.innerHTML=html||'<div class="pnote">ვერ მოიძებნა. სცადეთ ქართული ან ინგლისური სახელი.</div>';
+  document.getElementById("listCount").textContent=count;
+  listBody.querySelectorAll(".card").forEach(b=>b.addEventListener("click",()=>{
+    const st=STRUCTS.find(s=>s.id===b.dataset.id);
+    choose(pieces.find(q=>q.st===st&&q.side>=0)||pieces.find(q=>q.st===st));
+  }));
+}
+listFilter.addEventListener("input",buildList);
+
+/* ---------- pathologies panel ---------- */
+const pathoBody=document.getElementById("pathoBody");
+document.getElementById("pathoCount").textContent=PATHOS.length;
+const stName=id=>(STRUCTS.find(s=>s.id===id)||{ka:id}).ka;
+function renderPatho(){
+  pathoBody.innerHTML=PATHOS.map(d=>{
+    const on=patho&&patho.def===d;
+    return `<div class="pcard ${on?"on":""}" data-id="${d.id}" role="button" tabindex="0" aria-expanded="${on}"><b>${esc(d.ka)}</b><em>${esc(d.en)}</em>${on?`
+      <div class="sec"><h3>მიზეზი</h3><p>${esc(d.cause)}</p></div>
+      <div class="sec"><h3>კლინიკა</h3><p>${esc(d.signs)}</p></div>
+      <div class="sec"><h3>ფუნქციას კარგავს (მოდელში)</h3><div class="links">${d.affected.map(id=>`<span class="lnk bad">${esc(stName(id))}</span>`).join("")}</div></div>
+      ${d.spared.length?`<div class="sec"><h3>შენარჩუნებულია</h3><div class="links">${d.spared.map(id=>`<span class="lnk">${esc(stName(id))}</span>`).join("")}</div></div>`:""}
+      <div class="sec"><h3>კლინიკური მინიშნება</h3><p>${esc(d.pearl)}</p></div>
+      <div class="two" style="margin-top:12px"><button class="btn sm" type="button" data-act="normal">▶ ნორმა</button><button class="btn sm danger" type="button" data-act="lesion">▶ დაზიანება</button></div>`:""}</div>`;
+  }).join("");
+  pathoBody.querySelectorAll(".pcard").forEach(el=>{
+    const d=PATHOS.find(x=>x.id===el.dataset.id);
+    const go=()=>{if(!(patho&&patho.def===d)) activatePatho(d,true);};
+    el.addEventListener("click",go);
+    el.addEventListener("keydown",e=>{if(e.target===el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();go();}});
+    el.querySelectorAll("[data-act]").forEach(b=>b.addEventListener("click",e=>{e.stopPropagation();activatePatho(d,b.dataset.act==="lesion");}));
+  });
+}
+function activatePatho(d,lesionOn){
+  if(!d) return;
+  if(quiz) endQuiz();
+  if(tab!=="patho") setTab("patho");
+  setExplode(0);explodeCur=0;pieces.forEach(p=>{p.group.scale.setScalar(1);p.group.position.set(0,0,0);});isolated=null;CATS.forEach(c=>catOn[c.id]=true);
+  selected=null;info.hidden=true;syncSys();
+  patho={def:d,lesionOn};
+  const nerve=pieceBy(d.chain[d.chain.length-1],d.side);
+  playSignal({nerve,chainIds:d.chain,patho:d,lesionOn});
+  if(!sig) return;
+  if(isMobile()) collapse(pathoEl,true);
+  if(d.central) setView("front"); else frame([...sig.focus].filter(p=>p.st.cat!=="cortex"&&p.st.id!=="cord"),V(0,0.15,1));
+  renderPatho();
+}
+function endPatho(){patho=null;stopSignal();renderPatho();}
+
+/* ---------- signal animation ---------- */
+const STEPS=["მოტორული ქერქი","კორტიკოსპინალური გზა","ჯვარედინი (მოგრძო ტვინი)","მოტონეირონი (წინა რქა / ბირთვი)","პერიფერიული ნერვი","ნერვ-კუნთოვანი სინაფსი · ACh","კუნთის შეკუმშვა"];
+const sigEl=document.getElementById("signal"), sigSteps=document.getElementById("sigSteps"), sigNote=document.getElementById("sigNote"), sigBtns=document.getElementById("sigBtns");
+function glow(color,r,op){
+  const g=new THREE.Group();
+  const core=new THREE.Mesh(new THREE.SphereGeometry(1,14,10),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,depthTest:false}));
+  const halo=new THREE.Mesh(new THREE.SphereGeometry(2.4,14,10),new THREE.MeshBasicMaterial({color,transparent:true,opacity:op,depthTest:false,depthWrite:false}));
+  core.renderOrder=31;halo.renderOrder=30;g.add(halo);g.add(core);g.scale.setScalar(r);g.visible=false;scene.add(g);return g;
+}
+const pulses=[0,1,2,3].map(i=>glow(0x2fb5ff,0.0055*(1-i*0.18),0.22));
+const lesionMark=glow(0xe0352a,0.007,0.3);
+function wseg(pts,steps,split){const curve=new THREE.CatmullRomCurve3(dedupe(pts),false,"centripetal");return {curve,len:curve.getLength(),step:u=>u<split?steps[0]:steps[1]};}
+function playSignal(o){
+  stopSignal(true);
+  if(!o||!o.nerve) return;
+  const side=o.nerve.side||1;
+  const ids=o.chainIds||CHAIN[o.nerve.st.id]||[o.nerve.st.id];
+  const chain=ids.map(id=>pieceBy(id,o.nerve.side)).filter(p=>p&&p.curve);
+  if(!chain.length) return;
+  const segs=[];
+  const upstream=explodeCur<0.05;
+  const first=chain[0];
+  const nuc=NUC[first.st.id];
+  if(upstream){
+    const c=-side;
+    const start=first.curve.getPointAt(0).clone();
+    segs.push(wseg([V(c*0.050,1.712,0.012),V(c*0.034,1.684,0.006),V(c*0.020,1.650,0.0)],[0,1],0.3));
+    if(nuc){
+      const n=V(side*nuc[0],nuc[1],nuc[2]);
+      segs.push(wseg([V(c*0.020,1.650,0.0),V(c*0.010,1.626,0.0),V(0,nuc[1]+0.004,nuc[2]),n],[1,2],0.6));
+      segs.push(wseg([n,start],[3,4],0.35));
+    }else{
+      const lv=ROOT[first.st.id]||"C7", ry=LV[lv].y;
+      segs.push(wseg([V(c*0.020,1.650,0.0),V(c*0.010,1.625,0.0),V(c*0.006,1.604,0.004),V(0,1.580,-0.008)],[1,2],0.72));
+      const cord=[V(0,1.580,-0.008)];
+      for(let y=1.55;y>ry+0.01;y-=0.05) cord.push(V(side*0.002,y,zs(y)));
+      cord.push(V(side*0.004,ry,zs(ry)));
+      segs.push(wseg(cord,[1,3],0.85));
+      segs.push(wseg([V(side*0.004,ry,zs(ry)),exitPt(lv,side),start],[4,4],1));
+    }
+  }
+  chain.forEach(p=>segs.push({piece:p,curve:p.curve,len:p.curve.getLength(),step:()=>4}));
+  let t=0;
+  segs.forEach(s=>{const k=s.piece?Math.max(0.35,s.piece.group.scale.x):1;s.dur=Math.max(0.3,s.len*k/0.6);s.t0=t;t+=s.dur;});
+  let endT=t, lesion=null;
+  const d=o.patho;
+  if(d&&o.lesionOn){
+    if(d.lesion.upstream&&upstream){lesion={seg:segs[0],u:1};}
+    else if(d.lesion.id){const s=segs.find(x=>x.piece&&x.piece.st.id===d.lesion.id);if(s) lesion={seg:s,u:d.lesion.u};}
+    if(lesion) endT=lesion.seg.t0+lesion.u*lesion.seg.dur;
+  }
+  const muscles=new Set();
+  chain.forEach(p=>related(p).forEach(m=>muscles.add(m)));
+  const paralysed=new Set();
+  if(d){
+    [...d.affected,...d.spared].forEach(id=>{const m=pieceBy(id,d.side);if(m) muscles.add(m);});
+    if(o.lesionOn) d.affected.forEach(id=>{const m=pieceBy(id,d.side);if(m) paralysed.add(m);});
+  }
+  const focus=new Set([...chain,...muscles]);
+  if(upstream){const pc=pieceBy("precentral",-side);if(pc) focus.add(pc);if(!nuc){const cd=pieceBy("cord",0);if(cd) focus.add(cd);}}
+  sig={opts:o,segs,endT,lesion,muscles:[...muscles].filter(m=>!paralysed.has(m)),paralysed,focus,time:0,phase:"travel",pt:0,stepKey:""};
+  const title=d?(o.lesionOn?"დაზიანება: ":"ნორმა: ")+d.ka:"სიგნალი → "+o.nerve.ka;
+  document.getElementById("sigTitle").textContent=title;
+  sigBtns.innerHTML=(d?`<button class="btn sm" type="button" data-s="normal">ნორმა</button><button class="btn sm danger" type="button" data-s="lesion">დაზიანება</button>`:"")+`<button class="btn sm" type="button" data-s="stop">■ გაჩერება</button>`;
+  sigBtns.style.gridTemplateColumns=d?"auto auto auto":"auto";
+  sigBtns.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    if(b.dataset.s==="stop"){if(patho) endPatho(); else stopSignal();}
+    else activatePatho(d,b.dataset.s==="lesion");
+  });
+  sigNote.textContent=d?(o.lesionOn?(d.central?"ზედა მოტონეირონის დაზიანება: სიგნალი შიდა კაფსულაში წყდება. ნაცრისფერი კუნთები კარგავს ნებით მოძრაობას.":"ქვედა მოტონეირონის დაზიანება: სიგნალი ჩერდება წითელ წერტილთან. ნაცრისფერი კუნთები არ იკუმშება."):"ნორმა: სიგნალი ქერქიდან კუნთამდე ყველა ეტაპს გადის და კუნთი იკუმშება."):(upstream?"მოტორული ბრძანება ქერქიდან კუნთამდე; ანიმაცია ციკლურად მეორდება.":"დაშლილ ხედში ჩანს მხოლოდ პერიფერიული ეტაპი. სრული გზისთვის დააბრუნეთ დაშლა 0%-ზე.");
+  sigEl.hidden=false;document.body.classList.add("sig-on");
+  renderSteps(upstream?0:4,false,upstream?0:4);
+  paint();
+}
+function renderSteps(cur,block,from){
+  const key=cur+"|"+block+"|"+from;if(sig&&sig.stepKey===key) return;if(sig) sig.stepKey=key;
+  sigSteps.innerHTML=STEPS.map((s,i)=>`<span class="step ${i<from?"":i<cur?"done":i===cur?(block?"block":"on"):""}">${i+1}. ${s}</span>`).join("");
+}
+function resetMuscles(list){list.forEach(p=>p.group.children.forEach(m=>{if(m.userData.kind) m.scale.set(1,1,1);}));}
+function stopSignal(silent){
+  if(sig) resetMuscles([...sig.muscles]);
+  sig=null;pulses.forEach(p=>p.visible=false);lesionMark.visible=false;
+  if(!silent){sigEl.hidden=true;document.body.classList.remove("sig-on");paint();}
+}
+const tmpV=new THREE.Vector3();
+function pointAt(t,out){
+  let s=sig.segs[sig.segs.length-1];
+  for(const x of sig.segs){if(t<=x.t0+x.dur){s=x;break;}}
+  const u=THREE.MathUtils.clamp((t-s.t0)/s.dur,0,1);
+  out.copy(s.curve.getPointAt(u));
+  if(s.piece) s.piece.group.localToWorld(out);
+  return {s,u};
+}
+function updateSignal(dt){
+  if(!sig) return;
+  sig.time+=dt;
+  const from=sig.segs[0].piece?4:0;
+  const blink=0.75+0.25*Math.sin(performance.now()/90);
+  if(sig.lesion){pointAt(sig.endT,tmpV);lesionMark.position.copy(tmpV);lesionMark.visible=true;lesionMark.scale.setScalar(0.007*(1+0.25*Math.sin(performance.now()/160)));}
+  if(sig.phase==="travel"){
+    const head=sig.time;
+    pulses.forEach((pl,k)=>{
+      const tk=head-k*0.09;
+      if(tk<0){pl.visible=false;return;}
+      const r=pointAt(Math.min(tk,sig.endT),pl.position);
+      pl.visible=true;pl.scale.setScalar(0.0055*(1-k*0.18)*(r.s.piece?Math.max(0.5,r.s.piece.group.scale.x):1));
+    });
+    const r=pointAt(Math.min(head,sig.endT),tmpV);renderSteps(r.s.step(r.u),false,from);
+    if(head>=sig.endT+0.27){sig.phase=sig.lesion?"blocked":"nmj";sig.pt=0;}
+  }else if(sig.phase==="blocked"){
+    sig.pt+=dt;
+    pulses.forEach((pl,k)=>{pointAt(sig.endT,pl.position);pl.visible=k===0;pl.scale.setScalar(0.006*blink);});
+    const r=pointAt(sig.endT,tmpV);renderSteps(r.s.step(r.u),true,from);
+    if(sig.pt>1.5){sig.phase="travel";sig.time=0;}
+  }else if(sig.phase==="nmj"){
+    sig.pt+=dt;pulses.forEach(pl=>pl.visible=false);renderSteps(5,false,from);
+    sig.muscles.forEach(p=>{p.mat.emissive.setHex(0x2fb5ff);p.mat.emissiveIntensity=0.6*Math.sin(Math.PI*sig.pt/0.35);});
+    if(sig.pt>=0.35){sig.phase="contract";sig.pt=0;}
+  }else if(sig.phase==="contract"){
+    sig.pt+=dt;renderSteps(6,false,from);
+    const x=Math.min(1,sig.pt/1.3);
+    const c=x<0.3?x/0.3:x<0.6?1:1-(x-0.6)/0.4;
+    const cc=c*c*(3-2*c);
+    sig.muscles.forEach(p=>{
+      p.group.children.forEach(m=>{const k=m.userData.kind;
+        if(k==="spindle") m.scale.set(1+0.2*cc,1-0.17*cc,1+0.2*cc);
+        else if(k==="torus") m.scale.setScalar(1-0.2*cc);
+        else if(k==="dome") m.scale.set(1,1-0.55*cc,1);});
+      p.mat.emissive.setHex(0xff5a3c);p.mat.emissiveIntensity=0.55*cc;
+    });
+    if(sig.pt>=1.3){resetMuscles(sig.muscles);sig.phase="pause";sig.pt=0;paint();}
+  }else if(sig.phase==="pause"){
+    sig.pt+=dt;if(sig.pt>0.8){sig.phase="travel";sig.time=0;}
+  }
+}
+
+/* ---------- picking ---------- */
+const ray=new THREE.Raycaster(), mouse=new THREE.Vector2(), tip=document.getElementById("tip");
+let downAt=null, lastMove=null;
+function pick(e){
+  const r=renderer.domElement.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects(pickables.filter(m=>m.userData.piece.visible),false);
+  const ok=x=>!quiz||x.object.userData.piece===quiz.target;
+  const h=hits.find(x=>ok(x)&&!(mode==="brain"&&xray&&x.object.userData.piece.st.cat==="brain"))||hits.find(ok);
+  return h?h.object.userData.piece:null;
+}
+renderer.domElement.addEventListener("pointermove",e=>{lastMove=e;});
+renderer.domElement.addEventListener("pointerleave",()=>{lastMove=null;hovered=null;tip.hidden=true;paint();});
+renderer.domElement.addEventListener("pointerdown",e=>{downAt={x:e.clientX,y:e.clientY};});
+renderer.domElement.addEventListener("pointerup",e=>{
+  if(!downAt) return;const moved=Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y);downAt=null;
+  if(moved>5||quiz) return;
+  select(pick(e));
+});
+function hoverTick(){
+  if(!lastMove||quiz) return;
+  const e=lastMove;lastMove=null;
+  const p=pick(e);
+  if(p!==hovered){hovered=p;paint();}
+  renderer.domElement.style.cursor=p?"pointer":"grab";
+  if(p){tip.innerHTML=esc(p.ka)+"<em>"+esc(p.en)+"</em>";tip.style.left=e.clientX+"px";tip.style.top=e.clientY+"px";tip.hidden=false;}
+  else tip.hidden=true;
+}
+
+/* ---------- search ---------- */
+const q=document.getElementById("q"), results=document.getElementById("results");
+let resIdx=0, resItems=[];
+function doSearch(){
+  const t=norm(q.value.trim());
+  if(!t){results.hidden=true;return;}
+  resItems=pieces.filter(p=>norm(p.ka).includes(t)||norm(p.en).includes(t)||("fma"+(p.st.fma||"")).includes(t.replace(/\s/g,""))).slice(0,12);
+  resIdx=0;
+  results.innerHTML=resItems.length?resItems.map((p,i)=>`<button type="button" data-i="${i}" class="${i===0?"on":""}"><span>${esc(p.ka)}</span><span class="en">${esc(p.en)}${p.st.fma?" · FMA"+p.st.fma:""}</span></button>`).join(""):'<div class="none">ვერ მოიძებნა. სცადეთ ქართული ან ინგლისური სახელი.</div>';
+  results.hidden=false;
+  results.querySelectorAll("button").forEach(b=>b.addEventListener("mousedown",ev=>{ev.preventDefault();choose(resItems[+b.dataset.i]);}));
+}
+function ensureFor(p){
+  if(!catOn[p.st.cat]){catOn[p.st.cat]=true;syncSys();}
+  const needBrain=p.st.cat==="deep"||p.st.cat==="cortex";
+  if(needBrain&&mode!=="brain"){if(tab==="list") setMode("brain"); else setTab("brain");}
+  else if(!needBrain&&mode==="brain"&&!CAT[p.st.cat].brain){if(tab==="list") setMode("body"); else setTab("body");}
+  if(isolated&&isolated!==p){isolated=null;refreshVisibility();}
+}
+function choose(p){
+  if(!p) return;
+  if(quiz) endQuiz();
+  ensureFor(p);
+  if(isMobile()&&tab==="list") collapse(listEl,true);
+  select(p);focusPiece(p);results.hidden=true;q.blur();
+}
+q.addEventListener("input",doSearch);
+q.addEventListener("focus",doSearch);
+q.addEventListener("blur",()=>setTimeout(()=>results.hidden=true,120));
+q.addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(!resItems.length)return;resIdx=(resIdx+(e.key==="ArrowDown"?1:-1)+resItems.length)%resItems.length;
+    results.querySelectorAll("button").forEach((b,i)=>b.classList.toggle("on",i===resIdx));}
+  else if(e.key==="Enter"){choose(resItems[resIdx]);}
+  else if(e.key==="Escape"){q.value="";results.hidden=true;q.blur();}
+});
+window.addEventListener("keydown",e=>{
+  const typing=/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||"");
+  if(e.key==="/"&&!typing){e.preventDefault();q.focus();}
+  else if(e.key==="Escape"&&!typing){if(quiz) endQuiz(); else if(sig){if(patho) endPatho(); else stopSignal();} else select(null);}
+});
+
+/* ---------- quiz ---------- */
+const quizEl=document.getElementById("quiz");
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startQuiz(){
+  stopSignal();if(patho){patho=null;renderPatho();}
+  select(null);CATS.forEach(c=>catOn[c.id]=true);isolated=null;syncSys();
+  if(explodeTarget>0) setExplode(0);
+  quiz={score:0,total:0,target:null};document.getElementById("quizBtn").textContent="დასრულება";nextQ();
+}
+function endQuiz(){quiz=null;quizEl.hidden=true;document.getElementById("quizBtn").textContent="ვიქტორინა";paint();setView(mode==="brain"?"head":"front");}
+function nextQ(){
+  const pool=pieces.filter(p=>p.visible&&!/^(sn|ic)-/.test(p.st.id));
+  const t=pool[Math.floor(Math.random()*pool.length)];
+  quiz.target=t;
+  const cands=STRUCTS.filter(s=>!/^(sn|ic)-/.test(s.id)&&s.id!==t.st.id&&(mode!=="brain"||CAT[s.cat].brain));
+  const same=shuffle(cands.filter(s=>s.cat===t.st.cat)), other=shuffle(cands.filter(s=>s.cat!==t.st.cat));
+  const opts=shuffle([t.st,...same.concat(other).slice(0,3)]);
+  quizEl.innerHTML=`<div class="cat"><i style="background:var(--accent)"></i>ვიქტორინა · Quiz</div>
+    <h2>რა სტრუქტურაა მონიშნული?</h2><div class="q">${t.side?"მხარე: "+(t.side<0?"მარჯვენა":"მარცხენა")+" · ":""}აირჩიეთ სწორი სახელი.</div>
+    <div class="opts">${opts.map(o=>`<button type="button" data-id="${o.id}">${esc(o.ka)}<em>${esc(o.en)}</em></button>`).join("")}</div>
+    <div class="qfoot"><span class="score">ქულა ${quiz.score} / ${quiz.total}</span><button class="btn" type="button" id="qNext" disabled>შემდეგი →</button></div>`;
+  quizEl.hidden=false;info.hidden=true;
+  quizEl.querySelectorAll(".opts button").forEach(b=>b.addEventListener("click",()=>{
+    const ok=b.dataset.id===t.st.id;quiz.total++;if(ok)quiz.score++;
+    quizEl.querySelectorAll(".opts button").forEach(x=>{x.disabled=true;if(x.dataset.id===t.st.id)x.classList.add("right");});
+    if(!ok) b.classList.add("wrong");
+    quizEl.querySelector(".score").textContent=`ქულა ${quiz.score} / ${quiz.total}`;
+    const n=document.getElementById("qNext");n.disabled=false;n.focus();
+  }));
+  document.getElementById("qNext").addEventListener("click",nextQ);
+  paint();focusPiece(t);
+}
+document.getElementById("quizBtn").addEventListener("click",()=>quiz?endQuiz():startQuiz());
+
+/* ---------- first-run hint ---------- */
+const hint=document.getElementById("hint");
+let seen=false;try{seen=localStorage.getItem("nsa-hint-v2")==="1";}catch(e){}
+if(!seen) hint.hidden=false;
+document.getElementById("hintOk").addEventListener("click",()=>{hint.hidden=true;try{localStorage.setItem("nsa-hint-v2","1");}catch(e){}});
+
+/* ---------- loop ---------- */
+function resize(){
+  const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;
+  if(w<=760){const top=110,bottom=h*0.42;camera.setViewOffset(w,h,0,Math.round((bottom-top)/2),w,h);}else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);resize();
+const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const ease=t=>t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  explodeCur=reduce?explodeTarget:THREE.MathUtils.damp(explodeCur,explodeTarget,5,dt);
+  if(Math.abs(explodeCur-explodeTarget)<1e-4) explodeCur=explodeTarget;
+  const t=ease(explodeCur);
+  pieces.forEach(p=>{
+    p.cur.lerp(p.tgt,reduce?1:1-Math.exp(-6*dt));
+    const s=1+(p.scale-1)*t;
+    p.group.scale.setScalar(s);
+    p.group.position.set((p.cur.x-p.center.x*p.scale)*t,(p.cur.y-p.center.y*p.scale)*t,(0-p.center.z*p.scale)*t);
+  });
+  Object.values(labels).forEach(L=>{L.sp.visible=L.active&&t>0.05;L.sp.material.opacity=Math.min(1,t*1.4);});
+  ghost.visible=ghostOn&&mode==="body"&&t<0.98;ghostMat.opacity=0.085*(1-t);
+  updateSignal(dt);
+  if(camTween){camTween.k=Math.min(1,camTween.k+dt/(reduce?0.01:0.8));const k=ease(camTween.k);
+    camera.position.lerpVectors(camTween.p0,camTween.p1,k);controls.target.lerpVectors(camTween.t0,camTween.t1,k);if(camTween.k>=1)camTween=null;}
+  controls.update();hoverTick();renderer.render(scene,camera);requestAnimationFrame(loop);
+}
+syncSys();
+document.getElementById("loading").remove();
+requestAnimationFrame(loop);
+window.__atlas={pieces,STRUCTS,PATHOS};
+})();
+</script>
+
+</body>
+</html>
