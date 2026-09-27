@@ -1,4 +1,4 @@
-# ნერვული ატლასი · Nervous Atlas
+# ნერვული სისტემის ატლასი · Nervous System Atlas
 
 Interactive 3D atlas of the human nervous system for medical education, with two modes:
 
