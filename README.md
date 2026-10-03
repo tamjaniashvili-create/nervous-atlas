@@ -3,6 +3,7 @@
 Interactive 3D atlas of the human nervous system for medical education, with two modes:
 
 - **ნორმა (Normal):** 10 anatomical views: whole body, cortex (gyri), lobes, deep nuclei and ventricles, cerebral arteries, cranial nerves, spinal cord, brachial plexus, lower limb, and an animated corticospinal pathway. Click any structure to see its Georgian name, function, and FMA ID.
+- **ნეირონი (Cellular level):** 8 animated steps: neuron and glia, resting potential, action potential with a live Vm(t) trace, saltatory conduction, Ca²⁺ entry, SNARE exocytosis, receptor binding and EPSP, and the neuromuscular junction with sarcomere contraction. Each step lists its drug targets and clinical links. The geometry here is schematic and procedural (not BodyParts3D).
 - **პათოლოგია (Pathology):** 15 nosologies. Each one has an ICD-10 code, a description, a 4-step pathogenesis animated on the model, the clinical picture, and references.
 
 `/schematic/` holds the earlier procedural version, which has nerve–muscle signal animation and a quiz.

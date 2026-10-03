@@ -24,11 +24,13 @@ const rim = new THREE.DirectionalLight(0xffffff, 0.65); rim.position.set(-0.5, 1
 const back = new THREE.DirectionalLight(0xfff0e0, 0.45); back.position.set(0.5, 1.2, -2); scene.add(back);
 scene.add(cam); cam.add(new THREE.PointLight(0xffffff, 0.22));
 
+let MICRO = null;
 function resize() {
-  const w = innerWidth, h = innerHeight; R.setSize(w, h); cam.aspect = w / h;
+  const w = innerWidth, h = innerHeight; R.setSize(w, h); cam.aspect = w / h; if (MICRO) MICRO.resize(w, h);
   if (w <= 760) cam.setViewOffset(w, h, 0, Math.round(h * 0.2), w, h); else cam.clearViewOffset();
   cam.updateProjectionMatrix();
 }
+MICRO = window.createMicro(R);
 addEventListener('resize', resize); resize();
 
 // ---------------------------------------------------------------- textures & materials
@@ -334,6 +336,11 @@ const PATHO_LEGEND = [['დაზიანების კერა / დაზ�
 
 function renderLeft() {
   const L = $('#leftBody');
+  if (mode === 'micro') {
+    $('#leftTitle').textContent = 'ნეირონი · უჯრედული დონე';
+    L.innerHTML = '<div class="vlist">' + MICRO.steps.map((v, i) => `<button class="vitem" type="button" data-mi="${i}" aria-current="${i === curMicro}"><span class="dot">${i + 1}</span><span><b>${esc(v.t)}</b><small>${esc(v.sub)}</small></span></button>`).join('') + '</div>';
+    return;
+  }
   if (mode === 'norm') {
     $('#leftTitle').textContent = 'ნორმა · ხედები';
     L.innerHTML = '<div class="vlist">' + NORM.map((v, i) => `<button class="vitem" type="button" data-v="${v.id}" aria-current="${v === curView}"><span class="dot">${i + 1}</span><span><b>${esc(v.ka)}</b><small>${esc(v.sub)}</small></span></button>`).join('') + '</div>' +
@@ -356,6 +363,18 @@ function layerOn(k) { const v = curView; if (layers[k] != null) return layers[k]
 
 function renderRight() {
   const B = $('#rightBody');
+  if (mode === 'micro') {
+    const s = MICRO.steps[curMicro], n = MICRO.steps.length, chart = /rest|ap|salt/.test(s.id);
+    B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>უჯრედული დონე</span><span>·</span><span>ეტაპი ${curMicro + 1}/${n}</span></div><h1>${esc(s.t)}</h1><div class="en">${esc(s.sub)}</div></div>
+      ${chart ? `<div class="sec"><h3 style="display:flex;justify-content:space-between"><span>მემბრანის პოტენციალი</span><span id="vmVal" style="color:#ffa640;font-family:var(--mono);letter-spacing:0;text-transform:none">Vm</span></h3><canvas id="vmChart" style="width:100%;height:120px;display:block"></canvas></div>` : ''}
+      <div class="sec"><p>${esc(s.x)}</p><div class="stepnav"><button class="btn" type="button" id="prevM" ${curMicro ? '' : 'disabled'}>← წინა</button><button class="btn primary" type="button" id="nextM">${curMicro < n - 1 ? 'შემდეგი ეტაპი →' : 'თავიდან ↺'}</button></div></div>
+      <div class="sec"><h3>მთავარი ფაქტები</h3><dl class="fact">${s.facts.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl></div>
+      ${s.pharm.length ? `<div class="sec"><h3>ფარმაკოლოგიური სამიზნე</h3><ul>${s.pharm.map(([d, m]) => `<li><b style="font-weight:600">${esc(d)}</b>: ${esc(m)}</li>`).join('')}</ul></div>` : ''}
+      ${s.clin ? `<div class="sec"><h3>კლინიკური კავშირი</h3><p>${esc(s.clin)}</p></div>` : ''}
+      ${s.links.length ? `<div class="sec" style="display:flex;flex-wrap:wrap;gap:6px">${s.links.map(([id, t]) => `<button class="chip" type="button" data-link="${id}">${esc(t)} →</button>`).join('')}</div>` : ''}
+      <p class="disc">სქემატური ანიმაცია; მასშტაბი პირობითია (ვეზიკულა ≈ 40 ნმ, ნეირონის სხეული ≈ 10–100 მკმ). წყაროები: Kandel, <i>Principles of Neural Science</i>; StatPearls (Physiology, Action Potential; Neuromuscular Junction).</p>`;
+    return;
+  }
   if (mode === 'norm') {
     const v = curView;
     B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>ნორმა</span><span>·</span><span>ხედი ${NORM.indexOf(v) + 1}/${NORM.length}</span></div><h1>${esc(v.ka)}</h1><div class="en">${esc(v.sub)}</div></div>
@@ -392,9 +411,30 @@ function showSelected(m) {
 
 // ---------------------------------------------------------------- interaction
 function setMode(m) {
+  if (mode === 'micro' && m !== 'micro') { MICRO.leave(); ctl.enabled = true; }
   mode = m; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
-  if (m === 'norm') showView(curView); else { if (curNoso) openNoso(curNoso, curStep); else { renderLeft(); renderRight(); setLegend(PATHO_LEGEND); clearFx(); baseState(['cortex', 'cerebellum', 'stem', 'cord', 'cranial', 'spinal', 'legs', 'bone', 'skin'], { bone: .15 }); goCam('body'); } }
+  document.body.dataset.mode = m;
+  $('#attr').innerHTML = m === 'micro' ? 'უჯრედული დონე: სქემატური 3D, მასშტაბი პირობითია' : '3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია';
+  tip.hidden = true; $('#attr').hidden = m === 'micro';
+  if (m === 'micro') { ctl.enabled = false; MICRO.ctl.enabled = true; openMicro(curMicro); }
+  else if (m === 'norm') showView(curView); else { if (curNoso) openNoso(curNoso, curStep); else { renderLeft(); renderRight(); setLegend(PATHO_LEGEND); clearFx(); baseState(['cortex', 'cerebellum', 'stem', 'cord', 'cranial', 'spinal', 'legs', 'bone', 'skin'], { bone: .15 }); goCam('body'); } }
   try { localStorage.setItem('na-mode', m); } catch (e) {}
+}
+let curMicro = 0, vmHist = [];
+const MICRO_LEGEND = [['Na⁺', 0xffcc4d], ['K⁺', 0xb48cff], ['Ca²⁺', 0x4fd6ff], ['ნეირომედიატორი', 0xff7a59], ['მოქმედების პოტენციალი', 0xffa640]];
+function openMicro(i, instant) { curMicro = (i + MICRO.steps.length) % MICRO.steps.length; vmHist = []; MICRO.enter(curMicro, instant); renderLeft(); renderRight(); setLegend(MICRO_LEGEND); if (isPhone()) setCollapsed('#left', true); }
+function drawVm(v) {
+  const cv = document.getElementById('vmChart'); if (!cv) return;
+  const dpr = Math.min(devicePixelRatio, 2), w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  if (v != null) { vmHist.push(v); if (vmHist.length > 240) vmHist.shift(); }
+  const L = 34, Rr = 8, Tt = 10, B = 18, y = mv => Tt + (50 - mv) / 140 * (h - Tt - B);
+  g.font = '10px "IBM Plex Mono",monospace'; g.fillStyle = '#8a9199'; g.strokeStyle = 'rgba(236,230,218,.12)'; g.lineWidth = 1;
+  for (const mv of [40, 0, -55, -70, -90]) { g.beginPath(); g.setLineDash(mv === -55 ? [4, 4] : []); g.moveTo(L, y(mv)); g.lineTo(w - Rr, y(mv)); g.stroke(); g.fillText((mv > 0 ? '+' : '') + mv, 2, y(mv) + 3); }
+  g.setLineDash([]); g.fillText('ზღურბლი', L + 4, y(-55) - 4);
+  if (vmHist.length > 1) { g.strokeStyle = '#ffa640'; g.lineWidth = 2; g.beginPath(); vmHist.forEach((mv, i) => { const x = L + i / 239 * (w - L - Rr); i ? g.lineTo(x, y(mv)) : g.moveTo(x, y(mv)); }); g.stroke();
+    const last = vmHist[vmHist.length - 1]; g.fillStyle = '#ffa640'; g.beginPath(); g.arc(L + (vmHist.length - 1) / 239 * (w - L - Rr), y(last), 3.5, 0, 7); g.fill();
+    const o = document.getElementById('vmVal'); if (o) o.textContent = 'Vm ' + (last > 0 ? '+' : '') + Math.round(last) + ' mV'; }
 }
 function openNoso(n, step = 0) {
   curNoso = n; curStep = step; renderLeft(); renderRight(); setLegend(PATHO_LEGEND);
@@ -408,19 +448,25 @@ $('#leftBody').addEventListener('click', e => {
   const v = e.target.closest('[data-v]'); if (v) { showView(NORM.find(x => x.id === v.dataset.v)); if (isPhone()) setCollapsed('#left', true); return; }
   const l = e.target.closest('[data-l]'); if (l) { const k = l.dataset.l; layers[k] = !layerOn(k); showView(curView); return; }
   const n = e.target.closest('[data-n]'); if (n) openNoso(NOSOLOGY.find(x => x.id === n.dataset.n), 0);
+  const mi = e.target.closest('[data-mi]'); if (mi) openMicro(+mi.dataset.mi);
 });
 $('#rightBody').addEventListener('click', e => {
   const s = e.target.closest('[data-s]'); if (s) return setStep(+s.dataset.s);
   if (e.target.id === 'nextS') setStep(curStep + 1);
   if (e.target.id === 'prevS') setStep(curStep - 1);
+  if (e.target.id === 'nextM') openMicro(curMicro + 1);
+  if (e.target.id === 'prevM') openMicro(curMicro - 1);
+  const lk = e.target.closest('[data-link]'); if (lk) { const id = lk.dataset.link, no = NOSOLOGY.find(x => x.id === id), nv = NORM.find(x => x.id === id);
+    if (no) { setMode('patho'); openNoso(no, 0); } else if (nv) { setMode('norm'); showView(nv); } }
 });
 function setCollapsed(sel, on) { const el = $(sel); el.classList.toggle('col', on); const b = el.querySelector('.cbtn'); if (b) { b.textContent = on ? '⌃' : '⌄'; b.setAttribute('aria-expanded', !on); } }
 $('#leftC').onclick = () => setCollapsed('#left', !$('#left').classList.contains('col'));
 $('#rightC').onclick = () => setCollapsed('#right', !$('#right').classList.contains('col'));
-addEventListener('keydown', e => { if (mode === 'patho' && curNoso && !/INPUT/.test(document.activeElement.tagName)) { if (e.key === 'ArrowRight') setStep(curStep + 1); if (e.key === 'ArrowLeft') setStep(curStep - 1); } });
+addEventListener('keydown', e => { if (mode === 'micro' && !/INPUT/.test(document.activeElement.tagName)) { if (e.key === 'ArrowRight') openMicro(curMicro + 1); if (e.key === 'ArrowLeft') openMicro(curMicro - 1); } if (mode === 'patho' && curNoso && !/INPUT/.test(document.activeElement.tagName)) { if (e.key === 'ArrowRight') setStep(curStep + 1); if (e.key === 'ArrowLeft') setStep(curStep - 1); } });
 
 const ray = new THREE.Raycaster(), mv = new THREE.Vector2();
 function pick(ev) {
+  if (mode === 'micro') return null;
   const r = R.domElement.getBoundingClientRect(); mv.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
   ray.setFromCamera(mv, cam);
   const cands = ALL.filter(m => m.visible && m.material !== skinMat && m.material.opacity > .2);
@@ -448,6 +494,7 @@ const clock = new THREE.Clock(); const tmp = new THREE.Color();
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), .05), now = performance.now(), T = now / 1000;
+  if (mode === 'micro') { const v = MICRO.update(dt); drawVm(v); R.render(MICRO.scene, MICRO.cam); return; }
   if (tween) { tween.t = Math.min(1, tween.t + dt / .9); const k = 1 - Math.pow(1 - tween.t, 3);
     ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
   ctl.update();
@@ -478,10 +525,11 @@ function frame() {
   const h = (location.hash || '').slice(1);
   if (h && NOSOLOGY.find(n => n.id === h)) { mode = 'patho'; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === 'patho')); openNoso(NOSOLOGY.find(n => n.id === h)); }
   else if (h && NORM.find(n => n.id === h)) { showView(NORM.find(n => n.id === h)); }
-  else setMode(m0 === 'patho' ? 'patho' : 'norm');
+  else if (h === 'neuron' || h === 'micro') setMode('micro');
+  else setMode(m0 === 'patho' || m0 === 'micro' ? m0 : 'norm');
   if (isPhone()) { setCollapsed('#left', true); }
   $('#load').classList.add('gone');
   frame();
-  window.__atlas = { finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true };
+  window.__atlas = { openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true };
 })();
 })();

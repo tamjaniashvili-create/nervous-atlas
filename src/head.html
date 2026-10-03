@@ -36,6 +36,7 @@ a{color:var(--myelin)}
 .mode button{border:0;background:transparent;padding:6px 16px;border-radius:999px;cursor:pointer;font-weight:500;color:var(--ink2);white-space:nowrap}
 .mode button[aria-pressed="true"]{background:var(--ink);color:#11161c}
 .mode button[data-m="patho"][aria-pressed="true"]{background:var(--lesion);color:#fff}
+.mode button[data-m="micro"][aria-pressed="true"]{background:#8f78d6;color:#fff}
 .top .sp{flex:1}
 .toplinks{display:flex;gap:14px;align-items:center;font-size:12.5px}
 .toplinks a{color:var(--ink2);text-decoration:none;border-bottom:1px solid var(--line2)}
@@ -123,12 +124,14 @@ a{color:var(--myelin)}
 
 /* ---------- phone ---------- */
 @media (max-width:760px){
-  .top{gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px}
-  .brand{flex:1}
+  .top{gap:6px 10px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;flex-wrap:wrap}
+  .brand{flex:1 1 100%}
+  .mode{flex:1}
+  .mode button{flex:1}
   .brand span,.toplinks .hide-s{display:none}
-  .brand b{font-size:14.5px;white-space:normal;line-height:1.2}
+  .brand b{font-size:15px;white-space:nowrap}
   .top .sp{display:none}
-  .mode button{padding:5px 12px;font-size:13px}
+  .mode button{padding:5px 9px;font-size:12.5px}
   #left{left:10px;right:10px;top:auto;bottom:calc(10px + 42vh);width:auto;max-height:36vh}
   #left.col{max-height:none}
   #left.col .scroll{display:none}
@@ -136,7 +139,7 @@ a{color:var(--myelin)}
   #right.col{height:auto}
   #right.col .scroll{display:none}
   .cbtn{display:block}
-  #legend{left:12px;right:12px;bottom:auto;top:calc(62px + env(safe-area-inset-top,0px));max-width:none;font-size:11px}
+  #legend{left:12px;right:12px;bottom:auto;top:calc(84px + env(safe-area-inset-top,0px));max-width:none;font-size:11px}
   #attr{display:none}
   .card-h{padding:12px 14px 8px}.card-h h1{font-size:17px}
   .sec{padding:10px 14px 2px}
@@ -149,6 +152,7 @@ a{color:var(--myelin)}
   <div class="brand"><b>ნერვული სისტემის ატლასი</b><span>BodyParts3D · რეალური ანატომიური გეომეტრია</span></div>
   <div class="mode" role="group" aria-label="რეჟიმი">
     <button type="button" data-m="norm" aria-pressed="true">ნორმა</button>
+    <button type="button" data-m="micro" aria-pressed="false">ნეირონი</button>
     <button type="button" data-m="patho" aria-pressed="false">პათოლოგია</button>
   </div>
   <div class="sp"></div>
