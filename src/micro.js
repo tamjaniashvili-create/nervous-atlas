@@ -24,7 +24,7 @@ const MICRO_STEPS = [
     x: 'როცა მოქმედების პოტენციალი პრესინაფსურ ტერმინალს აღწევს, აქტიურ ზონასთან ძაბვადამოკიდებული Ca²⁺ არხები (P/Q და N ტიპი) იხსნება. Ca²⁺ შემოდის: გარეთ მისი კონცენტრაცია ≈ 2 mM-ია, ციტოზოლში ≈ 100 nM, ანუ გრადიენტი დაახლოებით 10 000-ჯერადია. ლოკალური Ca²⁺-ის ზრდა ეგზოციტოზის პირდაპირი სიგნალია.',
     facts: [['Ca²⁺ გარეთ', '≈ 2 mM'], ['Ca²⁺ ციტოზოლში', '≈ 0.1 µM'], ['სინაფსური დაყოვნება', '≈ 0.5 ms']],
     pharm: [['ზიკონოტიდი (Ziconotide)', 'N-ტიპის Ca²⁺ არხის ბლოკადა: ინტრათეკალური ანალგეზია'], ['გაბაპენტინი (Gabapentin), პრეგაბალინი (Pregabalin)', 'Ca²⁺ არხის α2δ ქვეერთეული: ნეიროპათიური ტკივილი']],
-    clin: 'ლამბერტ-იტონის მიასთენიური სინდრომი: ანტისხეულები P/Q-ტიპის Ca²⁺ არხების წინააღმდეგ (ხშირად პარანეოპლაზიური, წვრილუჯრედოვანი ფილტვის კიბოსთან). ACh-ის გამოყოფა მცირდება, ძალა კი ხანმოკლე დატვირთვის შემდეგ მატულობს.', links: [] },
+    clin: 'ლამბერტ-იტონის მიასთენიური სინდრომი: ანტისხეულები P/Q-ტიპის Ca²⁺ არხების წინააღმდეგ (ხშირად პარანეოპლაზიური, წვრილუჯრედოვანი ფილტვის კიბოსთან). ACh-ის გამოყოფა მცირდება, ძალა კი ხანმოკლე დატვირთვის შემდეგ მატულობს.', links: [['lems', 'ლამბერტ-იტონის სინდრომი']] },
   { id: 'exo', t: 'ეგზოციტოზი (SNARE)', sub: 'ვეზიკულა → სინაფსური ნაპრალი',
     x: 'Ca²⁺ სინაპტოტაგმინს უკავშირდება. SNARE კომპლექსი (სინაპტობრევინი/VAMP ვეზიკულაზე, სინტაქსინი და SNAP-25 პლაზმურ მემბრანაზე) ვეზიკულას მემბრანასთან ერწყმის. ნეირომედიატორი სინაფსურ ნაპრალში (≈ 20–40 ნმ) გამოიყოფა. ერთი ვეზიკულა მედიატორის ერთ „კვანტს" შეიცავს.',
     facts: [['ნაპრალის სიგანე', '≈ 20–40 ნმ'], ['ვეზიკულის დიამეტრი', '≈ 40 ნმ'], ['Ca²⁺-ის სენსორი', 'სინაპტოტაგმინი']],
@@ -39,7 +39,7 @@ const MICRO_STEPS = [
     x: 'მოტორული ნეირონის ტერმინალი აცეტილქოლინს გამოყოფს. ACh ბოლო ფირფიტის ნიკოტინურ რეცეპტორებს (Nm) უკავშირდება და წარმოიქმნება ბოლო ფირფიტის პოტენციალი, შემდეგ კი კუნთის მოქმედების პოტენციალი. ის T-მილაკებში ვრცელდება (DHP რეცეპტორი), სარკოპლაზმური ბადის რიანოდინის რეცეპტორი (RyR1) კი Ca²⁺-ს გამოყოფს. Ca²⁺ ტროპონინ C-ს უკავშირდება, ტროპომიოზინი იწევს და მიოზინის თავები აქტინთან ჯვარედინ ხიდებს ქმნის. სარკომერი მოკლდება, Z-დისკები ერთმანეთს უახლოვდება. ACh-ს აცეტილქოლინესთერაზა მილიწამებში შლის.',
     facts: [['მედიატორი', 'აცეტილქოლინი'], ['რეცეპტორი', 'ნიკოტინური (Nm)'], ['Ca²⁺-ის წყარო', 'სარკოპლაზმური ბადე (RyR1)']],
     pharm: [['როკურონიუმი (Rocuronium)', 'არადეპოლარიზებელი მიორელაქსანტი: nAChR-ის კონკურენტული ანტაგონისტი'], ['სუქცინილქოლინი (Succinylcholine)', 'დეპოლარიზებელი მიორელაქსანტი: მდგრადი დეპოლარიზაცია → ფასციკულაცია → დამბლა'], ['ნეოსტიგმინი (Neostigmine), პირიდოსტიგმინი (Pyridostigmine)', 'AChE-ის ინჰიბიცია: მიასთენიის მკურნალობა, არადეპოლარიზებელი ბლოკის რევერსია'], ['სუგამადექსი (Sugammadex)', 'როკურონიუმის/ვეკურონიუმის ინკაფსულაცია'], ['დანტროლენი (Dantrolene)', 'RyR1-ის ბლოკადა: ავთვისებიანი ჰიპერთერმია']],
-    clin: 'მიასთენია გრავისი: ანტისხეულები AChR-ის (იშვიათად MuSK-ის) წინააღმდეგ. სისუსტე დატვირთვით ძლიერდება, ხშირად პტოზითა და დიპლოპიით იწყება.', links: [['motor', 'მაკრო დონე: მოტორული გზა']] },
+    clin: 'მიასთენია გრავისი: ანტისხეულები AChR-ის (იშვიათად MuSK-ის) წინააღმდეგ. სისუსტე დატვირთვით ძლიერდება, ხშირად პტოზითა და დიპლოპიით იწყება.', links: [['mg', 'მიასთენია გრავისი'], ['lems', 'ლამბერტ-იტონის სინდრომი'], ['motor', 'მაკრო დონე: მოტორული გზა']] },
 ];
 
 window.createMicro = function (R) {
@@ -200,7 +200,7 @@ window.createMicro = function (R) {
 
   // ------------------------------------------------------------- camera presets
   const CAMS = { neuron: [[10, 0, 0], [6, 12, 58]], rest: [[0, -40, 0], [0, -34, 21]], ap: [[0, -40, 0], [4, -34.5, 19]], salt: [[12.5, 0, 0], [12.5, 4, 17]],
-    ca: [[60, 2.8, 0], [60, 4.6, 14]], exo: [[60, 1.4, 0], [61, 3.2, 13.5]], rec: [[60, -1, 0], [62, 1.2, 15]], nmj: [[120, -6, 0], [134, 0, 30]] };
+    ca: [[60, 2.8, 0], [60, 4.6, 14]], exo: [[60, 1.4, 0], [61, 3.2, 13.5]], rec: [[60, -1, 0], [62, 1.2, 15]], nmj: [[120, -6, 0], [134, 0, 30]], lems: [[60, 1.2, 0], [61.5, -.6, 12.5]] };
   let tween = null;
   function go(k) { const c = CAMS[k]; const tt = V(...c[0]), tp = V(...c[1]); const asp = innerWidth / innerHeight; if (asp < 1.2) tp.sub(tt).multiplyScalar(Math.min(2.4, 1.3 / asp)).add(tt); tween = { t: 0, ft: ctl.target.clone(), fp: cam.position.clone(), tt, tp }; }
   function snap(k) { go(k); ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; }
@@ -277,16 +277,65 @@ window.createMicro = function (R) {
       return null; },
   };
 
+
+  // ------------------------------------------------------------- pathology overlays (myasthenia gravis, Lambert–Eaton)
+  const abM = mat(0xff4f7a, { emissive: lin(0x5a0a20) });
+  function antibody() { const g = new THREE.Group(); const cy = (l) => new THREE.CylinderGeometry(.06, .06, l, 8);
+    const st = new THREE.Mesh(cy(.42), abM); st.position.y = .21; g.add(st);
+    for (const s of [-1, 1]) { const a = new THREE.Mesh(cy(.38), abM); a.position.set(s * .12, -.15, 0); a.rotation.z = s * .65; g.add(a); const tip = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), abM); tip.position.set(s * .24, -.31, 0); g.add(tip); }
+    g.visible = false; SY.add(g); return g; }
+  const AB_R = RECS.map(() => antibody()), AB_C = CA_CH.map(() => { const g = antibody(); g.rotation.z = Math.PI; g.scale.setScalar(.8); return g; });
+  const orientTo = (a, p) => a.quaternion.setFromUnitVectors(V(0, -1, 0), p.clone().sub(a.position).normalize());
+  const abHome = (i, n) => { const a = i / n * Math.PI * 2; return V(Math.cos(a) * 4.2, .35 + (i % 3) * .25, Math.sin(a) * 4.2); };
+  const MG_LOST = [0, 2, 4, 6, 8, 10], MG_AB = [1, 5, 9], LEMS_BLOCK = [0, 1, 2, 4, 5];
+  let patho = null, eppHist = [];
+  function resetPatho() { AB_R.forEach(a => a.visible = false); AB_C.forEach(a => a.visible = false); RECS.forEach(r => r.visible = true); CA_CH.forEach(c => c.visible = true); eppHist = []; epsp.material.opacity = 1; }
+  // one presynaptic release cycle at local time k∈[0,1]: nVes docked vesicles fuse, ca = fraction of Ca²⁺ that enters, rec = indices of working receptors
+  function release(k, nVes, caFrac, rec, epspK) {
+    synAP.visible = k < .18; synAP.position.set(0, sm(8, 1.6, k / .18), 0);
+    const open = k > .15 && k < .45; CA_CH.forEach((c, i) => c.material.emissive.copy(lin(C.ca).multiplyScalar(open && !(patho && patho.startsWith('lems') && LEMS_BLOCK.includes(i)) ? 1 : .1)));
+    CA.forEach((c, i) => { const enters = i < CA.length * caFrac; const q = (k - .16 - (i % 5) * .02) / .2; const tgt = c.ch.position.clone().multiplyScalar(.45).setY(1.3); c.s.position.copy(!enters || q <= 0 ? c.home : q < .5 ? lerpV(c.home, c.ch.position, q * 2) : lerpV(c.ch.position, tgt, (q - .5) * 2)); });
+    DOCK.forEach((d, i) => { if (i >= nVes) { d.m.position.copy(d.home); d.m.scale.setScalar(1); return; } const q = (k - .3 - i * .02) / .15; d.m.position.copy(lerpV(d.home, d.home.clone().setY(.78), q)); d.m.scale.setScalar(q > 1 ? Math.max(0, 1 - (q - 1) * 3) : 1); });
+    NT.forEach((n, i) => { const vi = DOCK.indexOf(n.d); const on = vi < nVes; const q = (k - .42) / .3; n.s.visible = on && q > 0 && q < 1.3; if (n.s.visible) { n.s.material.opacity = 1; n.s.position.copy(lerpV(n.d.home.clone().setY(.66), rec.includes(RECS.indexOf(n.rec)) ? n.rec.position.clone().setY(.42) : n.d.home.clone().setY(.3).add(n.j.clone().multiplyScalar(2.5)), q)); } });
+    const bound = k > .62 && k < .9; RECS.forEach((r, i) => r.material.emissive.copy(bound && rec.includes(i) && nVes > 0 ? lin(C.recOn).multiplyScalar(.8) : lin(0x101a50)));
+    NAIN.forEach(n => { const ok = rec.includes(RECS.indexOf(n.rec)) && nVes > 0; const q = ((k - .64) / .22 + n.o * .3); n.s.visible = ok && q > 0 && q < 1; if (n.s.visible) n.s.position.copy(lerpV(n.rec.position.clone().setY(.9), n.rec.position.clone().setY(-1.6), q)); });
+    epsp.visible = k > .78 && epspK > .05; if (epsp.visible) { epsp.position.set(0, sm(-1, -8.5, (k - .78) / .22), 0); epsp.scale.setScalar(.6 + 1.6 * Math.min(1.4, epspK)); epsp.material.opacity = Math.min(1, .25 + .6 * epspK); }
+  }
+  const ALL_REC = RECS.map((_, i) => i), MG_OK = ALL_REC.filter(i => !MG_LOST.includes(i) && !MG_AB.includes(i));
+  const ANIM_P = {
+    mg_ab(t) { const k = (t % 5) / 5; RECS.forEach((r, i) => { const a = AB_R[i]; a.visible = true; const q = (k - (i % 6) * .05) / .45; const tgt = r.position.clone().setY(.62); a.position.copy(lerpV(abHome(i, 12), tgt, q)); r.material.emissive.copy(q >= 1 ? lin(0x3a1020) : lin(0x101a50)); }); return null; },
+    mg_fewrec(t) { RECS.forEach((r, i) => { r.visible = !MG_LOST.includes(i); }); AB_R.forEach((a, i) => { a.visible = MG_AB.includes(i); if (a.visible) a.position.copy(RECS[i].position.clone().setY(.62)); });
+      release((t % 4) / 4, 6, 1, MG_OK, .55); return null; },
+    mg_rundown(t) { RECS.forEach((r, i) => { r.visible = !MG_LOST.includes(i); }); AB_R.forEach((a, i) => { a.visible = MG_AB.includes(i); if (a.visible) a.position.copy(RECS[i].position.clone().setY(.62)); });
+      const AMP = [1.25, 1.05, .9, .82, .8], VES = [6, 5, 4, 4, 4], per = 1.7, n = AMP.length, cyc = t % (per * n + 1.5), s = Math.min(n - 1, Math.floor(cyc / per)), k = cyc >= per * n ? 1 : (cyc % per) / per;
+      release(k, VES[s], 1, MG_OK, AMP[s]); const shown = cyc >= per * n ? n : s + (k > .8 ? 1 : 0); return { epp: AMP.slice(0, shown), n, thr: 1, mode: 'decrement' }; },
+    lems_ab(t) { const k = (t % 5) / 5; CA_CH.forEach((c, i) => { const a = AB_C[i]; a.visible = LEMS_BLOCK.includes(i); if (!a.visible) return; const q = (k - (i % 5) * .06) / .45; const tgt = c.position.clone().multiplyScalar(1.3).setY(.72); a.position.copy(lerpV(abHome(i, 7).setY(.3), tgt, q)); orientTo(a, c.position); c.material.emissive.copy(q >= 1 ? lin(0x3a1020) : lin(C.ca).multiplyScalar(.1)); }); return null; },
+    lems_lowca(t) { CA_CH.forEach((c, i) => { AB_C[i].visible = LEMS_BLOCK.includes(i); AB_C[i].position.copy(c.position.clone().multiplyScalar(1.3).setY(.72)); orientTo(AB_C[i], c.position); });
+      release((t % 4) / 4, 1, .25, ALL_REC, .35); return null; },
+    lems_facil(t) { CA_CH.forEach((c, i) => { AB_C[i].visible = LEMS_BLOCK.includes(i); AB_C[i].position.copy(c.position.clone().multiplyScalar(1.3).setY(.72)); orientTo(AB_C[i], c.position); });
+      const AMP = [.4, .62, .85, 1.05, 1.22, 1.35], VES = [1, 2, 3, 4, 5, 6], CAF = [.25, .4, .55, .7, .85, 1], per = 1.1, n = AMP.length, cyc = t % (per * n + 1.5), s = Math.min(n - 1, Math.floor(cyc / per)), k = cyc >= per * n ? 1 : (cyc % per) / per;
+      release(k, VES[s], CAF[s], ALL_REC, AMP[s]); const shown = cyc >= per * n ? n : s + (k > .8 ? 1 : 0); return { epp: AMP.slice(0, shown), n, thr: 1, mode: 'increment' }; },
+  };
+  const PLBL = {
+    mg_ab: [['ანტისხეულები (IgG) AChR-ის წინააღმდეგ', V(63.6, 1.6, 1)], ['nAChR (პოსტსინაფსური)', V(62.6, -.4, 1.2)], ['პრესინაფსური ტერმინალი', V(63.6, 5.5, 0)]],
+    mg_fewrec: [['დაკარგული რეცეპტორები', V(62.8, -.5, 1.2)], ['ბლოკირებული AChR', V(58, .9, 1)], ['ACh ნორმალურად გამოიყოფა', V(60, 1.6, 1.6)], ['სუსტი ბოლო ფირფიტის პოტენციალი', V(61, -3, 0)]],
+    mg_rundown: [['ACh-ის გამოყოფა თანდათან მცირდება', V(60, 2.2, 1.6)], ['EPP ზღურბლს ქვემოთ ეცემა', V(61, -3, 0)]],
+    lems_ab: [['ანტისხეულები P/Q Ca²⁺ არხების წინააღმდეგ', V(63.8, -.4, 1)], ['ძაბვადამოკიდ. Ca²⁺ არხები', V(62.2, 1.1, 0)], ['პრესინაფსური ტერმინალი', V(63.6, 5.5, 0)]],
+    lems_lowca: [['Ca²⁺ ცოტა შემოდის', V(64, 1.6, 0)], ['მხოლოდ 1 ვეზიკულა ერწყმის', V(60, .95, 1.5)], ['რეცეპტორები ნორმალურია', V(62.6, -.4, 1.2)]],
+    lems_facil: [['Ca²⁺ გროვდება ყოველ იმპულსზე', V(64, 1.6, 0)], ['გამოყოფა თანდათან იზრდება', V(60, .95, 1.5)], ['EPP ზღურბლს აღწევს', V(61, -3, 0)]],
+  };
+
   // ------------------------------------------------------------- public API
   let active = false;
   return {
     scene, cam, ctl, steps: MICRO_STEPS,
-    enter(i, instant) { active = true; step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
-    leave() { active = false; labelLayer.style.display = 'none'; ctl.enabled = false; },
+    enter(i, instant) { active = true; patho = null; resetPatho(); step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
+    enterPatho(cfg, instant) { active = true; patho = cfg.anim; T = 0; resetDynamic(); resetPatho(); if (instant) snap(cfg.view); else go(cfg.view); setLabels(PLBL[cfg.anim]); labelLayer.style.display = ''; },
+    leave() { active = false; resetPatho(); labelLayer.style.display = 'none'; ctl.enabled = false; },
     finish() { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } },
     update(dt) { if (!active) return null; T += dt;
       if (tween) { tween.t = Math.min(1, tween.t + dt / 1.1); const k = 1 - Math.pow(1 - tween.t, 3); ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
-      ctl.update(); const v = ANIM[MICRO_STEPS[step].id](T); placeLabels(); return v; },
+      ctl.update(); const v = patho ? ANIM_P[patho](T) : ANIM[MICRO_STEPS[step].id](T); placeLabels(); return v; },
     Vm,
   };
 };

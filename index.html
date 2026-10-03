@@ -350,6 +350,7 @@ const NOSO_GROUPS = [
   ['cns', 'თავის ტვინი'],
   ['cord', 'ზურგის ტვინი / მოტორული ნეირონი'],
   ['cn', 'თავის ტვინის ნერვები'],
+  ['nmj', 'ნერვ-კუნთოვანი სინაფსი'],
   ['pns', 'პერიფერიული ნერვები და ფესვები'],
 ];
 
@@ -515,6 +516,40 @@ const NOSOLOGY = [
 },
 // ============================== პერიფერიული ==============================
 {
+  id: 'mg', grp: 'nmj', icd: 'G70.0', ka: 'მიასთენია გრავისი', en: 'Myasthenia gravis',
+  desc: 'ნერვ-კუნთოვანი გადაცემის აუტოიმუნური დაავადება, პოსტსინაფსური დაზიანებით. გენერალიზებული ფორმის დაახლოებით 85%-ში ანტისხეულები მიმართულია აცეტილქოლინის რეცეპტორის (AChR) წინააღმდეგ, ნაკლებად ხშირად MuSK-ის ან LRP4-ის წინააღმდეგ. მთავარი ნიშანია დაღლადი სისუსტე: ძლიერდება დატვირთვით და მცირდება მოსვენებით.',
+  show: ['cortex', 'cerebellum', 'stem', 'cranial', 'cord', 'spinal', 'legs', 'muscle', 'bone', 'skin'], op: { bone: .12 },
+  steps: [
+    { t: 'ანტისხეულები AChR-ის წინააღმდეგ', x: 'აუტოიმუნური პროცესი ხშირად თიმუსთან არის დაკავშირებული: თიმუსის ჰიპერპლაზია ხშირია, თიმომა გვხვდება დაახლოებით 10–15%-ში. CD4⁺ T ლიმფოციტების დახმარებით B უჯრედები IgG1/IgG3 ანტისხეულებს გამოიმუშავებენ ნიკოტინური რეცეპტორის α ქვეერთეულის მთავარი იმუნოგენური რეგიონის წინააღმდეგ.',
+      fx: { micro: { view: 'rec', anim: 'mg_ab' }, note: 'სქემატური უჯრედული დონე; ACh-ის რეცეპტორები ბოლო ფირფიტაზე.' } },
+    { t: 'რეცეპტორების დაკარგვა', x: 'ანტისხეულები სამი გზით ამცირებს ფუნქციური რეცეპტორების რაოდენობას. (1) კომპლემენტი აქტიურდება, მემბრანის შემტევი კომპლექსი (MAC) აზიანებს პოსტსინაფსურ მემბრანას და მისი ნაოჭები სიმარტივდება. (2) ანტისხეულები რეცეპტორებს ერთმანეთთან აკავშირებს, რაც მათ ენდოციტოზსა და დაშლას აჩქარებს (ანტიგენური მოდულაცია). (3) იშვიათად ანტისხეული პირდაპირ ბლოკავს ACh-ის დაკავშირების ადგილს. ACh ნორმალურად გამოიყოფა, მაგრამ პასუხი სუსტია.',
+      fx: { micro: { view: 'rec', anim: 'mg_fewrec' } } },
+    { t: 'უსაფრთხოების ფაქტორის შემცირება → დაღლადობა', x: 'ნორმაში ბოლო ფირფიტის პოტენციალი (EPP) ზღურბლს დიდი მარაგით აჭარბებს (უსაფრთხოების ფაქტორი). რეცეპტორების დაკარგვის შემდეგ EPP ზღურბლს მცირედ აჭარბებს. განმეორებითი სტიმულაციისას ACh-ის გამოყოფა ფიზიოლოგიურადაც მცირდება და EPP ზოგიერთ ბოჭკოში ზღურბლს ქვემოთ ეცემა. ამის შედეგია დაღლადი სისუსტე, ENMG-ზე კი 3 Hz-იანი რითმული სტიმულაციისას >10%-იანი დეკრემენტი.',
+      fx: { micro: { view: 'rec', anim: 'mg_rundown' }, chart: 'epp' } },
+    { t: 'კლინიკური განაწილება', x: 'ყველაზე ხშირად ზიანდება თვალის გარეთა კუნთები (პტოზი, დიპლოპია), ბულბური (დისფაგია, დიზართრია, ღეჭვისას დაღლა) და კიდურების პროქსიმალური კუნთები. სუნთქვის კუნთების ჩართვა მიასთენიურ კრიზს იწვევს. მგრძნობელობა და რეფლექსები შენარჩუნებულია.',
+      fx: { cam: 'body', show: ['cortex', 'cerebellum', 'stem', 'cranial', 'cord', 'spinal', 'legs', 'muscle', 'bone'], hl: [{ m: 'oculomotor|trochlear|abducens|nerve to .*(rectus|oblique|levator)|facial|glossopharyngeal|vagus|hypoglossal', c: 'amber', g: ['cranial'] }, { m: '(deltoid|biceps brachii|triceps brachii|rectus femoris|vastus|gluteus|biceps femoris|semitendinosus)', c: 'amber', g: ['muscle'] }, { m: 'phrenic', c: 'red', g: ['spinal'] }], dim: true } },
+  ],
+  clin: ['დაღლადი სისუსტე, უარესდება საღამოს და დატვირთვით', 'პტოზი, დიპლოპია (≈ 50%-ში პირველი ნიშანი)', 'ბულბური ნიშნები; მიასთენიური კრიზი — სუნთქვის უკმარისობა', 'მგრძნობელობა და რეფლექსები ნორმალურია', 'დიაგნოზი: anti-AChR / anti-MuSK ანტისხეულები, RNS-დეკრემენტი, ერთი ბოჭკოს EMG (jitter), ყინულის ტესტი; გულმკერდის CT (თიმომა)', 'მკურნალობა: პირიდოსტიგმინი (Pyridostigmine), კორტიკოსტეროიდები, აზათიოპრინი (Azathioprine), C5 ინჰიბიტორები (Eculizumab, Ravulizumab), FcRn ანტაგონისტი (Efgartigimod), თიმექტომია; კრიზისას IVIG ან პლაზმაფერეზი', 'ფარმაცევტისთვის: ამწვავებს ამინოგლიკოზიდები, ფტორქინოლონები, მაკროლიდები, მაგნიუმი (iv), β-ბლოკერები, ბოტულინის ტოქსინი; ზემგრძნობელობა არადეპოლარიზებელი მიორელაქსანტების მიმართ'],
+  refs: [['StatPearls: Myasthenia Gravis', SB('myasthenia gravis')], ['International consensus guidance for MG (Narayanaswami 2021)', PM('International consensus guidance for management of myasthenia gravis 2020 update Narayanaswami')]],
+},
+{
+  id: 'lems', grp: 'nmj', icd: 'G73.1 / G70.8', ka: 'ლამბერტ-იტონის მიასთენიური სინდრომი', en: 'Lambert–Eaton myasthenic syndrome',
+  desc: 'ნერვ-კუნთოვანი გადაცემის აუტოიმუნური დაავადება, პრესინაფსური დაზიანებით: ანტისხეულები P/Q-ტიპის ძაბვადამოკიდებული Ca²⁺ არხების წინააღმდეგ. დაახლოებით 50–60%-ში პარანეოპლაზიურია, ძირითადად წვრილუჯრედოვანი ფილტვის კიბოს ფონზე. მიასთენიისგან განსხვავებით, ძალა მოკლე დატვირთვის შემდეგ მატულობს.',
+  show: ['cortex', 'cerebellum', 'stem', 'cranial', 'cord', 'spinal', 'legs', 'muscle', 'bone', 'skin'], op: { bone: .12 },
+  steps: [
+    { t: 'ანტისხეულები Ca²⁺ არხების წინააღმდეგ', x: 'წვრილუჯრედოვანი ფილტვის კიბოს უჯრედები ძაბვადამოკიდებულ Ca²⁺ არხებს გამოხატავენ. მათ წინააღმდეგ წარმოქმნილი ანტისხეულები ჯვარედინად უკავშირდება მოტორული ნერვის ტერმინალის P/Q-ტიპის არხებს (მოლეკულური მიმიკრია). არაპარანეოპლაზიური ფორმა ხშირად სხვა აუტოიმუნურ დაავადებებთან ერთად გვხვდება.',
+      fx: { micro: { view: 'lems', anim: 'lems_ab' } } },
+    { t: 'Ca²⁺-ის შემოსვლის შემცირება', x: 'ანტისხეულები Ca²⁺ არხებს ერთმანეთთან აკავშირებს და მათ ინტერნალიზაციას იწვევს. აქტიურ ზონაში არხები მცირდება. ერთი მოქმედების პოტენციალისას ნაკლები Ca²⁺ შემოდის, ერწყმის ნაკლები ვეზიკულა და ACh-ის კვანტური რაოდენობა მცირდება. პოსტსინაფსური რეცეპტორები ნორმალურია.',
+      fx: { micro: { view: 'lems', anim: 'lems_lowca' } } },
+    { t: 'დაბალი EPP და ფასილიტაცია', x: 'ცალკეული იმპულსის შემდეგ ბოლო ფირფიტის პოტენციალი დაბალია და ბევრი ბოჭკო არ იკუმშება. მაღალი სიხშირის სტიმულაციისას (20–50 Hz) ან 10 წამიანი მაქსიმალური ნებითი შეკუმშვის შემდეგ ტერმინალში ნარჩენი Ca²⁺ გროვდება, გამოყოფა იზრდება და EPP ზღურბლს აღწევს. ENMG-ზე CMAP-ის ამპლიტუდა დაბალია და მატულობს >100%-ით (ინკრემენტი).',
+      fx: { micro: { view: 'lems', anim: 'lems_facil' }, chart: 'epp' } },
+    { t: 'კლინიკა: პროქსიმალური სისუსტე + ავტონომიური ნიშნები', x: 'ძირითადად ზიანდება ქვედა კიდურების პროქსიმალური კუნთები (კიბეზე ასვლა, სკამიდან ადგომა). რეფლექსები დაქვეითებულია და დატვირთვის შემდეგ დროებით აღდგება. ავტონომიური დისფუნქცია ვლინდება პირის სიმშრალით, ყაბზობით და ერექციული დისფუნქციით. პტოზი და დიპლოპია მიასთენიაზე ნაკლებად გამოხატულია.',
+      fx: { cam: 'legs', show: ['cord', 'spinal', 'legs', 'muscle', 'bone'], hl: [{ m: '(rectus femoris|vastus|gluteus|biceps femoris|semitendinosus)', c: 'amber', g: ['muscle'] }, { m: '(deltoid|biceps brachii|triceps brachii)', c: 'amber', g: ['muscle'] }], dim: true } },
+  ],
+  clin: ['პროქსიმალური, ძირითადად ქვედა კიდურების სისუსტე', 'ჰიპო/არეფლექსია; ძალა და რეფლექსები დატვირთვის შემდეგ დროებით მატულობს', 'ავტონომიური: პირის სიმშრალე, ყაბზობა, ერექციული დისფუნქცია', 'დიაგნოზი: anti-P/Q VGCC ანტისხეულები; RNS: დაბალი CMAP და >100% ინკრემენტი', 'სიმსივნის ძიება: გულმკერდის CT / PET-CT (წვრილუჯრედოვანი კიბო); განმეორებითი სკრინინგი ≈ 2 წლის განმავლობაში', 'მკურნალობა: ამიფამპრიდინი (Amifampridine, 3,4-DAP): K⁺ არხების ბლოკადა → ახანგრძლივებს AP-ს → ↑ Ca²⁺ შემოსვლა; პირიდოსტიგმინი (Pyridostigmine) — დამატებით; იმუნოთერაპია; სიმსივნის მკურნალობა'],
+  refs: [['StatPearls: Lambert-Eaton Myasthenic Syndrome', SB('Lambert-Eaton myasthenic syndrome')], ['LEMS — diagnosis and treatment review', PM('Lambert-Eaton myasthenic syndrome diagnosis treatment review')]],
+},
+{
   id: 'gbs', grp: 'pns', icd: 'G61.0', ka: 'გიენ-ბარეს სინდრომი', en: 'Guillain–Barré syndrome',
   desc: 'მწვავე იმუნური პოლირადიკულონევროპათია. სწრაფად, დღეების ან კვირების განმავლობაში, ვითარდება აღმავალი სიმეტრიული დუნე სისუსტე და არეფლექსია. სუნთქვის კუნთების ჩართვის გამო საჭიროებს მონიტორინგს.',
   show: ['cortex', 'cerebellum', 'stem', 'cord', 'spinal', 'legs', 'cranial', 'bone', 'muscle', 'skin'], op: { bone: .1 },
@@ -644,7 +679,7 @@ const MICRO_STEPS = [
     x: 'როცა მოქმედების პოტენციალი პრესინაფსურ ტერმინალს აღწევს, აქტიურ ზონასთან ძაბვადამოკიდებული Ca²⁺ არხები (P/Q და N ტიპი) იხსნება. Ca²⁺ შემოდის: გარეთ მისი კონცენტრაცია ≈ 2 mM-ია, ციტოზოლში ≈ 100 nM, ანუ გრადიენტი დაახლოებით 10 000-ჯერადია. ლოკალური Ca²⁺-ის ზრდა ეგზოციტოზის პირდაპირი სიგნალია.',
     facts: [['Ca²⁺ გარეთ', '≈ 2 mM'], ['Ca²⁺ ციტოზოლში', '≈ 0.1 µM'], ['სინაფსური დაყოვნება', '≈ 0.5 ms']],
     pharm: [['ზიკონოტიდი (Ziconotide)', 'N-ტიპის Ca²⁺ არხის ბლოკადა: ინტრათეკალური ანალგეზია'], ['გაბაპენტინი (Gabapentin), პრეგაბალინი (Pregabalin)', 'Ca²⁺ არხის α2δ ქვეერთეული: ნეიროპათიური ტკივილი']],
-    clin: 'ლამბერტ-იტონის მიასთენიური სინდრომი: ანტისხეულები P/Q-ტიპის Ca²⁺ არხების წინააღმდეგ (ხშირად პარანეოპლაზიური, წვრილუჯრედოვანი ფილტვის კიბოსთან). ACh-ის გამოყოფა მცირდება, ძალა კი ხანმოკლე დატვირთვის შემდეგ მატულობს.', links: [] },
+    clin: 'ლამბერტ-იტონის მიასთენიური სინდრომი: ანტისხეულები P/Q-ტიპის Ca²⁺ არხების წინააღმდეგ (ხშირად პარანეოპლაზიური, წვრილუჯრედოვანი ფილტვის კიბოსთან). ACh-ის გამოყოფა მცირდება, ძალა კი ხანმოკლე დატვირთვის შემდეგ მატულობს.', links: [['lems', 'ლამბერტ-იტონის სინდრომი']] },
   { id: 'exo', t: 'ეგზოციტოზი (SNARE)', sub: 'ვეზიკულა → სინაფსური ნაპრალი',
     x: 'Ca²⁺ სინაპტოტაგმინს უკავშირდება. SNARE კომპლექსი (სინაპტობრევინი/VAMP ვეზიკულაზე, სინტაქსინი და SNAP-25 პლაზმურ მემბრანაზე) ვეზიკულას მემბრანასთან ერწყმის. ნეირომედიატორი სინაფსურ ნაპრალში (≈ 20–40 ნმ) გამოიყოფა. ერთი ვეზიკულა მედიატორის ერთ „კვანტს" შეიცავს.',
     facts: [['ნაპრალის სიგანე', '≈ 20–40 ნმ'], ['ვეზიკულის დიამეტრი', '≈ 40 ნმ'], ['Ca²⁺-ის სენსორი', 'სინაპტოტაგმინი']],
@@ -659,7 +694,7 @@ const MICRO_STEPS = [
     x: 'მოტორული ნეირონის ტერმინალი აცეტილქოლინს გამოყოფს. ACh ბოლო ფირფიტის ნიკოტინურ რეცეპტორებს (Nm) უკავშირდება და წარმოიქმნება ბოლო ფირფიტის პოტენციალი, შემდეგ კი კუნთის მოქმედების პოტენციალი. ის T-მილაკებში ვრცელდება (DHP რეცეპტორი), სარკოპლაზმური ბადის რიანოდინის რეცეპტორი (RyR1) კი Ca²⁺-ს გამოყოფს. Ca²⁺ ტროპონინ C-ს უკავშირდება, ტროპომიოზინი იწევს და მიოზინის თავები აქტინთან ჯვარედინ ხიდებს ქმნის. სარკომერი მოკლდება, Z-დისკები ერთმანეთს უახლოვდება. ACh-ს აცეტილქოლინესთერაზა მილიწამებში შლის.',
     facts: [['მედიატორი', 'აცეტილქოლინი'], ['რეცეპტორი', 'ნიკოტინური (Nm)'], ['Ca²⁺-ის წყარო', 'სარკოპლაზმური ბადე (RyR1)']],
     pharm: [['როკურონიუმი (Rocuronium)', 'არადეპოლარიზებელი მიორელაქსანტი: nAChR-ის კონკურენტული ანტაგონისტი'], ['სუქცინილქოლინი (Succinylcholine)', 'დეპოლარიზებელი მიორელაქსანტი: მდგრადი დეპოლარიზაცია → ფასციკულაცია → დამბლა'], ['ნეოსტიგმინი (Neostigmine), პირიდოსტიგმინი (Pyridostigmine)', 'AChE-ის ინჰიბიცია: მიასთენიის მკურნალობა, არადეპოლარიზებელი ბლოკის რევერსია'], ['სუგამადექსი (Sugammadex)', 'როკურონიუმის/ვეკურონიუმის ინკაფსულაცია'], ['დანტროლენი (Dantrolene)', 'RyR1-ის ბლოკადა: ავთვისებიანი ჰიპერთერმია']],
-    clin: 'მიასთენია გრავისი: ანტისხეულები AChR-ის (იშვიათად MuSK-ის) წინააღმდეგ. სისუსტე დატვირთვით ძლიერდება, ხშირად პტოზითა და დიპლოპიით იწყება.', links: [['motor', 'მაკრო დონე: მოტორული გზა']] },
+    clin: 'მიასთენია გრავისი: ანტისხეულები AChR-ის (იშვიათად MuSK-ის) წინააღმდეგ. სისუსტე დატვირთვით ძლიერდება, ხშირად პტოზითა და დიპლოპიით იწყება.', links: [['mg', 'მიასთენია გრავისი'], ['lems', 'ლამბერტ-იტონის სინდრომი'], ['motor', 'მაკრო დონე: მოტორული გზა']] },
 ];
 
 window.createMicro = function (R) {
@@ -820,7 +855,7 @@ window.createMicro = function (R) {
 
   // ------------------------------------------------------------- camera presets
   const CAMS = { neuron: [[10, 0, 0], [6, 12, 58]], rest: [[0, -40, 0], [0, -34, 21]], ap: [[0, -40, 0], [4, -34.5, 19]], salt: [[12.5, 0, 0], [12.5, 4, 17]],
-    ca: [[60, 2.8, 0], [60, 4.6, 14]], exo: [[60, 1.4, 0], [61, 3.2, 13.5]], rec: [[60, -1, 0], [62, 1.2, 15]], nmj: [[120, -6, 0], [134, 0, 30]] };
+    ca: [[60, 2.8, 0], [60, 4.6, 14]], exo: [[60, 1.4, 0], [61, 3.2, 13.5]], rec: [[60, -1, 0], [62, 1.2, 15]], nmj: [[120, -6, 0], [134, 0, 30]], lems: [[60, 1.2, 0], [61.5, -.6, 12.5]] };
   let tween = null;
   function go(k) { const c = CAMS[k]; const tt = V(...c[0]), tp = V(...c[1]); const asp = innerWidth / innerHeight; if (asp < 1.2) tp.sub(tt).multiplyScalar(Math.min(2.4, 1.3 / asp)).add(tt); tween = { t: 0, ft: ctl.target.clone(), fp: cam.position.clone(), tt, tp }; }
   function snap(k) { go(k); ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; }
@@ -897,16 +932,65 @@ window.createMicro = function (R) {
       return null; },
   };
 
+
+  // ------------------------------------------------------------- pathology overlays (myasthenia gravis, Lambert–Eaton)
+  const abM = mat(0xff4f7a, { emissive: lin(0x5a0a20) });
+  function antibody() { const g = new THREE.Group(); const cy = (l) => new THREE.CylinderGeometry(.06, .06, l, 8);
+    const st = new THREE.Mesh(cy(.42), abM); st.position.y = .21; g.add(st);
+    for (const s of [-1, 1]) { const a = new THREE.Mesh(cy(.38), abM); a.position.set(s * .12, -.15, 0); a.rotation.z = s * .65; g.add(a); const tip = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), abM); tip.position.set(s * .24, -.31, 0); g.add(tip); }
+    g.visible = false; SY.add(g); return g; }
+  const AB_R = RECS.map(() => antibody()), AB_C = CA_CH.map(() => { const g = antibody(); g.rotation.z = Math.PI; g.scale.setScalar(.8); return g; });
+  const orientTo = (a, p) => a.quaternion.setFromUnitVectors(V(0, -1, 0), p.clone().sub(a.position).normalize());
+  const abHome = (i, n) => { const a = i / n * Math.PI * 2; return V(Math.cos(a) * 4.2, .35 + (i % 3) * .25, Math.sin(a) * 4.2); };
+  const MG_LOST = [0, 2, 4, 6, 8, 10], MG_AB = [1, 5, 9], LEMS_BLOCK = [0, 1, 2, 4, 5];
+  let patho = null, eppHist = [];
+  function resetPatho() { AB_R.forEach(a => a.visible = false); AB_C.forEach(a => a.visible = false); RECS.forEach(r => r.visible = true); CA_CH.forEach(c => c.visible = true); eppHist = []; epsp.material.opacity = 1; }
+  // one presynaptic release cycle at local time k∈[0,1]: nVes docked vesicles fuse, ca = fraction of Ca²⁺ that enters, rec = indices of working receptors
+  function release(k, nVes, caFrac, rec, epspK) {
+    synAP.visible = k < .18; synAP.position.set(0, sm(8, 1.6, k / .18), 0);
+    const open = k > .15 && k < .45; CA_CH.forEach((c, i) => c.material.emissive.copy(lin(C.ca).multiplyScalar(open && !(patho && patho.startsWith('lems') && LEMS_BLOCK.includes(i)) ? 1 : .1)));
+    CA.forEach((c, i) => { const enters = i < CA.length * caFrac; const q = (k - .16 - (i % 5) * .02) / .2; const tgt = c.ch.position.clone().multiplyScalar(.45).setY(1.3); c.s.position.copy(!enters || q <= 0 ? c.home : q < .5 ? lerpV(c.home, c.ch.position, q * 2) : lerpV(c.ch.position, tgt, (q - .5) * 2)); });
+    DOCK.forEach((d, i) => { if (i >= nVes) { d.m.position.copy(d.home); d.m.scale.setScalar(1); return; } const q = (k - .3 - i * .02) / .15; d.m.position.copy(lerpV(d.home, d.home.clone().setY(.78), q)); d.m.scale.setScalar(q > 1 ? Math.max(0, 1 - (q - 1) * 3) : 1); });
+    NT.forEach((n, i) => { const vi = DOCK.indexOf(n.d); const on = vi < nVes; const q = (k - .42) / .3; n.s.visible = on && q > 0 && q < 1.3; if (n.s.visible) { n.s.material.opacity = 1; n.s.position.copy(lerpV(n.d.home.clone().setY(.66), rec.includes(RECS.indexOf(n.rec)) ? n.rec.position.clone().setY(.42) : n.d.home.clone().setY(.3).add(n.j.clone().multiplyScalar(2.5)), q)); } });
+    const bound = k > .62 && k < .9; RECS.forEach((r, i) => r.material.emissive.copy(bound && rec.includes(i) && nVes > 0 ? lin(C.recOn).multiplyScalar(.8) : lin(0x101a50)));
+    NAIN.forEach(n => { const ok = rec.includes(RECS.indexOf(n.rec)) && nVes > 0; const q = ((k - .64) / .22 + n.o * .3); n.s.visible = ok && q > 0 && q < 1; if (n.s.visible) n.s.position.copy(lerpV(n.rec.position.clone().setY(.9), n.rec.position.clone().setY(-1.6), q)); });
+    epsp.visible = k > .78 && epspK > .05; if (epsp.visible) { epsp.position.set(0, sm(-1, -8.5, (k - .78) / .22), 0); epsp.scale.setScalar(.6 + 1.6 * Math.min(1.4, epspK)); epsp.material.opacity = Math.min(1, .25 + .6 * epspK); }
+  }
+  const ALL_REC = RECS.map((_, i) => i), MG_OK = ALL_REC.filter(i => !MG_LOST.includes(i) && !MG_AB.includes(i));
+  const ANIM_P = {
+    mg_ab(t) { const k = (t % 5) / 5; RECS.forEach((r, i) => { const a = AB_R[i]; a.visible = true; const q = (k - (i % 6) * .05) / .45; const tgt = r.position.clone().setY(.62); a.position.copy(lerpV(abHome(i, 12), tgt, q)); r.material.emissive.copy(q >= 1 ? lin(0x3a1020) : lin(0x101a50)); }); return null; },
+    mg_fewrec(t) { RECS.forEach((r, i) => { r.visible = !MG_LOST.includes(i); }); AB_R.forEach((a, i) => { a.visible = MG_AB.includes(i); if (a.visible) a.position.copy(RECS[i].position.clone().setY(.62)); });
+      release((t % 4) / 4, 6, 1, MG_OK, .55); return null; },
+    mg_rundown(t) { RECS.forEach((r, i) => { r.visible = !MG_LOST.includes(i); }); AB_R.forEach((a, i) => { a.visible = MG_AB.includes(i); if (a.visible) a.position.copy(RECS[i].position.clone().setY(.62)); });
+      const AMP = [1.25, 1.05, .9, .82, .8], VES = [6, 5, 4, 4, 4], per = 1.7, n = AMP.length, cyc = t % (per * n + 1.5), s = Math.min(n - 1, Math.floor(cyc / per)), k = cyc >= per * n ? 1 : (cyc % per) / per;
+      release(k, VES[s], 1, MG_OK, AMP[s]); const shown = cyc >= per * n ? n : s + (k > .8 ? 1 : 0); return { epp: AMP.slice(0, shown), n, thr: 1, mode: 'decrement' }; },
+    lems_ab(t) { const k = (t % 5) / 5; CA_CH.forEach((c, i) => { const a = AB_C[i]; a.visible = LEMS_BLOCK.includes(i); if (!a.visible) return; const q = (k - (i % 5) * .06) / .45; const tgt = c.position.clone().multiplyScalar(1.3).setY(.72); a.position.copy(lerpV(abHome(i, 7).setY(.3), tgt, q)); orientTo(a, c.position); c.material.emissive.copy(q >= 1 ? lin(0x3a1020) : lin(C.ca).multiplyScalar(.1)); }); return null; },
+    lems_lowca(t) { CA_CH.forEach((c, i) => { AB_C[i].visible = LEMS_BLOCK.includes(i); AB_C[i].position.copy(c.position.clone().multiplyScalar(1.3).setY(.72)); orientTo(AB_C[i], c.position); });
+      release((t % 4) / 4, 1, .25, ALL_REC, .35); return null; },
+    lems_facil(t) { CA_CH.forEach((c, i) => { AB_C[i].visible = LEMS_BLOCK.includes(i); AB_C[i].position.copy(c.position.clone().multiplyScalar(1.3).setY(.72)); orientTo(AB_C[i], c.position); });
+      const AMP = [.4, .62, .85, 1.05, 1.22, 1.35], VES = [1, 2, 3, 4, 5, 6], CAF = [.25, .4, .55, .7, .85, 1], per = 1.1, n = AMP.length, cyc = t % (per * n + 1.5), s = Math.min(n - 1, Math.floor(cyc / per)), k = cyc >= per * n ? 1 : (cyc % per) / per;
+      release(k, VES[s], CAF[s], ALL_REC, AMP[s]); const shown = cyc >= per * n ? n : s + (k > .8 ? 1 : 0); return { epp: AMP.slice(0, shown), n, thr: 1, mode: 'increment' }; },
+  };
+  const PLBL = {
+    mg_ab: [['ანტისხეულები (IgG) AChR-ის წინააღმდეგ', V(63.6, 1.6, 1)], ['nAChR (პოსტსინაფსური)', V(62.6, -.4, 1.2)], ['პრესინაფსური ტერმინალი', V(63.6, 5.5, 0)]],
+    mg_fewrec: [['დაკარგული რეცეპტორები', V(62.8, -.5, 1.2)], ['ბლოკირებული AChR', V(58, .9, 1)], ['ACh ნორმალურად გამოიყოფა', V(60, 1.6, 1.6)], ['სუსტი ბოლო ფირფიტის პოტენციალი', V(61, -3, 0)]],
+    mg_rundown: [['ACh-ის გამოყოფა თანდათან მცირდება', V(60, 2.2, 1.6)], ['EPP ზღურბლს ქვემოთ ეცემა', V(61, -3, 0)]],
+    lems_ab: [['ანტისხეულები P/Q Ca²⁺ არხების წინააღმდეგ', V(63.8, -.4, 1)], ['ძაბვადამოკიდ. Ca²⁺ არხები', V(62.2, 1.1, 0)], ['პრესინაფსური ტერმინალი', V(63.6, 5.5, 0)]],
+    lems_lowca: [['Ca²⁺ ცოტა შემოდის', V(64, 1.6, 0)], ['მხოლოდ 1 ვეზიკულა ერწყმის', V(60, .95, 1.5)], ['რეცეპტორები ნორმალურია', V(62.6, -.4, 1.2)]],
+    lems_facil: [['Ca²⁺ გროვდება ყოველ იმპულსზე', V(64, 1.6, 0)], ['გამოყოფა თანდათან იზრდება', V(60, .95, 1.5)], ['EPP ზღურბლს აღწევს', V(61, -3, 0)]],
+  };
+
   // ------------------------------------------------------------- public API
   let active = false;
   return {
     scene, cam, ctl, steps: MICRO_STEPS,
-    enter(i, instant) { active = true; step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
-    leave() { active = false; labelLayer.style.display = 'none'; ctl.enabled = false; },
+    enter(i, instant) { active = true; patho = null; resetPatho(); step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
+    enterPatho(cfg, instant) { active = true; patho = cfg.anim; T = 0; resetDynamic(); resetPatho(); if (instant) snap(cfg.view); else go(cfg.view); setLabels(PLBL[cfg.anim]); labelLayer.style.display = ''; },
+    leave() { active = false; resetPatho(); labelLayer.style.display = 'none'; ctl.enabled = false; },
     finish() { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } },
     update(dt) { if (!active) return null; T += dt;
       if (tween) { tween.t = Math.min(1, tween.t + dt / 1.1); const k = 1 - Math.pow(1 - tween.t, 3); ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
-      ctl.update(); const v = ANIM[MICRO_STEPS[step].id](T); placeLabels(); return v; },
+      ctl.update(); const v = patho ? ANIM_P[patho](T) : ANIM[MICRO_STEPS[step].id](T); placeLabels(); return v; },
     Vm,
   };
 };
@@ -1177,8 +1261,13 @@ function addWave(w) { const p = anchor(w.at), col = COL[w.c || 'red'];
   const m = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .25, depthWrite: false, blending: THREE.AdditiveBlending }));
   m.position.copy(p); m.renderOrder = 17; fxRoot.add(m); waves.push({ m, r: w.r, t: Math.random() }); }
 
+let pathoMicro = false;
+function exitPathoMicro() { if (pathoMicro) { MICRO.leave(); pathoMicro = false; ctl.enabled = true; MICRO.ctl.enabled = false; } }
 function applyFx(fx, def) {
   clearFx();
+  $('#attr').hidden = !!fx.micro;
+  if (fx.micro) { pathoMicro = true; ctl.enabled = false; MICRO.ctl.enabled = true; eppT = 0; MICRO.enterPatho(fx.micro); return; }
+  exitPathoMicro();
   const show = fx.show || def.show; const op = Object.assign({}, def.op || {}, fx.op || {});
   baseState(show.concat(layerExtra(show)), op, !!fx.dim);
   for (const o of fx.only || []) { const r = re(o.m); for (const m of ALL) if (m.userData.g === o.g && !r.test(m.userData.lname)) m.visible = false; }
@@ -1258,6 +1347,7 @@ function startMotor() {
 // ---------------------------------------------------------------- UI rendering
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function setLegend(items) { $('#legend').innerHTML = (items || []).map(([t, c]) => `<span><i style="background:#${new THREE.Color(c).getHexString()}"></i>${esc(t)}</span>`).join(''); }
+const PATHO_LEGEND_MICRO = [['ანტისხეული (IgG)', 0xff4f7a], ['Ca²⁺', 0x4fd6ff], ['ნეირომედიატორი (ACh)', 0xff7a59], ['Na⁺', 0xffcc4d], ['რეცეპტორი', 0x7a8cff]];
 const PATHO_LEGEND = [['დაზიანების კერა / დაზიანებული', COL.red], ['ჩართული / რისკის ზონა', COL.amber], ['ფუნქციის დაქვეითება', COL.blue], ['შენარჩუნებული', COL.green], ['დამბლა / ატროფია', 0x8c8f94]];
 
 function renderLeft() {
@@ -1316,7 +1406,7 @@ function renderRight() {
       ${isPhone() ? '' : `<div class="sec"><h3>აღწერა</h3><p>${esc(n.desc)}</p></div>`}
       <div class="sec"><h3>განვითარების მექანიზმი</h3>
         <div class="steps" role="tablist">${n.steps.map((st, i) => `<button type="button" role="tab" data-s="${i}" aria-current="${i === curStep}" class="${i < curStep ? 'done' : ''}" title="${esc(st.t)}">${i + 1}</button>`).join('')}</div>
-        <div class="stepbox"><h4>${curStep + 1}. ${esc(s.t)}</h4><p>${esc(s.x)}</p>${s.fx.note ? `<p class="note">${esc(s.fx.note)}</p>` : ''}</div>
+        <div class="stepbox"><h4>${curStep + 1}. ${esc(s.t)}</h4>${s.fx.chart === 'epp' ? `<p class="note" style="margin:0 0 4px">ბოლო ფირფიტის პოტენციალი (EPP) თითოეულ იმპულსზე: მწვანე — კუნთი იკუმშება, წითელი — ზღურბლს ქვემოთ</p><canvas id="eppChart" style="width:100%;height:110px;display:block;margin-bottom:8px"></canvas>` : ''}<p>${esc(s.x)}</p>${s.fx.note ? `<p class="note">${esc(s.fx.note)}</p>` : ''}</div>
         <div class="stepnav"><button class="btn" type="button" id="prevS" ${curStep ? '' : 'disabled'}>← წინა</button><button class="btn primary" type="button" id="nextS">${curStep < n.steps.length - 1 ? 'შემდეგი ეტაპი →' : 'თავიდან ↺'}</button></div>
       </div>
       ${isPhone() ? `<div class="sec"><h3>აღწერა</h3><p>${esc(n.desc)}</p></div>` : ''}
@@ -1338,6 +1428,7 @@ function showSelected(m) {
 // ---------------------------------------------------------------- interaction
 function setMode(m) {
   if (mode === 'micro' && m !== 'micro') { MICRO.leave(); ctl.enabled = true; }
+  if (m !== 'patho') exitPathoMicro();
   mode = m; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
   document.body.dataset.mode = m;
   $('#attr').innerHTML = m === 'micro' ? 'უჯრედული დონე: სქემატური 3D, მასშტაბი პირობითია' : '3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია';
@@ -1349,6 +1440,17 @@ function setMode(m) {
 let curMicro = 0, vmHist = [];
 const MICRO_LEGEND = [['Na⁺', 0xffcc4d], ['K⁺', 0xb48cff], ['Ca²⁺', 0x4fd6ff], ['ნეირომედიატორი', 0xff7a59], ['მოქმედების პოტენციალი', 0xffa640]];
 function openMicro(i, instant) { curMicro = (i + MICRO.steps.length) % MICRO.steps.length; vmHist = []; MICRO.enter(curMicro, instant); renderLeft(); renderRight(); setLegend(MICRO_LEGEND); if (isPhone()) setCollapsed('#left', true); }
+let eppT = 0;
+function drawEpp(v) {
+  const cv = document.getElementById('eppChart'); if (!cv) return;
+  const dpr = Math.min(devicePixelRatio, 2), w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const L = 8, B = 20, T = 10, max = 1.5, y = a => T + (1 - a / max) * (h - T - B), bw = (w - L * 2) / v.n;
+  g.font = '10px "Noto Sans Georgian",sans-serif';
+  v.epp.forEach((a, i) => { g.fillStyle = a >= v.thr ? '#63b57d' : '#e2574c'; g.fillRect(L + i * bw + bw * .2, y(a), bw * .6, y(0) - y(a)); g.fillStyle = '#8a9199'; g.fillText(String(i + 1), L + i * bw + bw * .45, h - 6); });
+  g.strokeStyle = '#e6c46e'; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(L, y(v.thr)); g.lineTo(w - L, y(v.thr)); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#e6c46e'; g.fillText('ზღურბლი', w - L - 50, y(v.thr) - 4);
+}
 function drawVm(v) {
   const cv = document.getElementById('vmChart'); if (!cv) return;
   const dpr = Math.min(devicePixelRatio, 2), w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
@@ -1363,11 +1465,11 @@ function drawVm(v) {
     const o = document.getElementById('vmVal'); if (o) o.textContent = 'Vm ' + (last > 0 ? '+' : '') + Math.round(last) + ' mV'; }
 }
 function openNoso(n, step = 0) {
-  curNoso = n; curStep = step; renderLeft(); renderRight(); setLegend(PATHO_LEGEND);
+  curNoso = n; curStep = step; renderLeft(); renderRight(); setLegend(n.steps[step].fx.micro ? PATHO_LEGEND_MICRO : PATHO_LEGEND);
   applyFx(n.steps[step].fx, n);
   if (isPhone()) setCollapsed('#left', true);
 }
-function setStep(i) { curStep = (i + curNoso.steps.length) % curNoso.steps.length; renderRight(); applyFx(curNoso.steps[curStep].fx, curNoso); }
+function setStep(i) { curStep = (i + curNoso.steps.length) % curNoso.steps.length; renderRight(); applyFx(curNoso.steps[curStep].fx, curNoso); setLegend(curNoso.steps[curStep].fx.micro ? PATHO_LEGEND_MICRO : PATHO_LEGEND); }
 
 document.querySelector('.mode').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setMode(b.dataset.m); });
 $('#leftBody').addEventListener('click', e => {
@@ -1392,7 +1494,7 @@ addEventListener('keydown', e => { if (mode === 'micro' && !/INPUT/.test(documen
 
 const ray = new THREE.Raycaster(), mv = new THREE.Vector2();
 function pick(ev) {
-  if (mode === 'micro') return null;
+  if (mode === 'micro' || pathoMicro) return null;
   const r = R.domElement.getBoundingClientRect(); mv.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
   ray.setFromCamera(mv, cam);
   const cands = ALL.filter(m => m.visible && m.material !== skinMat && m.material.opacity > .2);
@@ -1420,7 +1522,7 @@ const clock = new THREE.Clock(); const tmp = new THREE.Color();
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), .05), now = performance.now(), T = now / 1000;
-  if (mode === 'micro') { const v = MICRO.update(dt); drawVm(v); R.render(MICRO.scene, MICRO.cam); return; }
+  if (mode === 'micro' || pathoMicro) { const v = MICRO.update(dt); if (typeof v === 'number') drawVm(v); else if (v && v.epp) drawEpp(v); R.render(MICRO.scene, MICRO.cam); return; }
   if (tween) { tween.t = Math.min(1, tween.t + dt / .9); const k = 1 - Math.pow(1 - tween.t, 3);
     ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
   ctl.update();

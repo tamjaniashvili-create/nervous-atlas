@@ -262,8 +262,13 @@ function addWave(w) { const p = anchor(w.at), col = COL[w.c || 'red'];
   const m = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .25, depthWrite: false, blending: THREE.AdditiveBlending }));
   m.position.copy(p); m.renderOrder = 17; fxRoot.add(m); waves.push({ m, r: w.r, t: Math.random() }); }
 
+let pathoMicro = false;
+function exitPathoMicro() { if (pathoMicro) { MICRO.leave(); pathoMicro = false; ctl.enabled = true; MICRO.ctl.enabled = false; } }
 function applyFx(fx, def) {
   clearFx();
+  $('#attr').hidden = !!fx.micro;
+  if (fx.micro) { pathoMicro = true; ctl.enabled = false; MICRO.ctl.enabled = true; eppT = 0; MICRO.enterPatho(fx.micro); return; }
+  exitPathoMicro();
   const show = fx.show || def.show; const op = Object.assign({}, def.op || {}, fx.op || {});
   baseState(show.concat(layerExtra(show)), op, !!fx.dim);
   for (const o of fx.only || []) { const r = re(o.m); for (const m of ALL) if (m.userData.g === o.g && !r.test(m.userData.lname)) m.visible = false; }
@@ -343,6 +348,7 @@ function startMotor() {
 // ---------------------------------------------------------------- UI rendering
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 function setLegend(items) { $('#legend').innerHTML = (items || []).map(([t, c]) => `<span><i style="background:#${new THREE.Color(c).getHexString()}"></i>${esc(t)}</span>`).join(''); }
+const PATHO_LEGEND_MICRO = [['ანტისხეული (IgG)', 0xff4f7a], ['Ca²⁺', 0x4fd6ff], ['ნეირომედიატორი (ACh)', 0xff7a59], ['Na⁺', 0xffcc4d], ['რეცეპტორი', 0x7a8cff]];
 const PATHO_LEGEND = [['დაზიანების კერა / დაზიანებული', COL.red], ['ჩართული / რისკის ზონა', COL.amber], ['ფუნქციის დაქვეითება', COL.blue], ['შენარჩუნებული', COL.green], ['დამბლა / ატროფია', 0x8c8f94]];
 
 function renderLeft() {
@@ -401,7 +407,7 @@ function renderRight() {
       ${isPhone() ? '' : `<div class="sec"><h3>აღწერა</h3><p>${esc(n.desc)}</p></div>`}
       <div class="sec"><h3>განვითარების მექანიზმი</h3>
         <div class="steps" role="tablist">${n.steps.map((st, i) => `<button type="button" role="tab" data-s="${i}" aria-current="${i === curStep}" class="${i < curStep ? 'done' : ''}" title="${esc(st.t)}">${i + 1}</button>`).join('')}</div>
-        <div class="stepbox"><h4>${curStep + 1}. ${esc(s.t)}</h4><p>${esc(s.x)}</p>${s.fx.note ? `<p class="note">${esc(s.fx.note)}</p>` : ''}</div>
+        <div class="stepbox"><h4>${curStep + 1}. ${esc(s.t)}</h4>${s.fx.chart === 'epp' ? `<p class="note" style="margin:0 0 4px">ბოლო ფირფიტის პოტენციალი (EPP) თითოეულ იმპულსზე: მწვანე — კუნთი იკუმშება, წითელი — ზღურბლს ქვემოთ</p><canvas id="eppChart" style="width:100%;height:110px;display:block;margin-bottom:8px"></canvas>` : ''}<p>${esc(s.x)}</p>${s.fx.note ? `<p class="note">${esc(s.fx.note)}</p>` : ''}</div>
         <div class="stepnav"><button class="btn" type="button" id="prevS" ${curStep ? '' : 'disabled'}>← წინა</button><button class="btn primary" type="button" id="nextS">${curStep < n.steps.length - 1 ? 'შემდეგი ეტაპი →' : 'თავიდან ↺'}</button></div>
       </div>
       ${isPhone() ? `<div class="sec"><h3>აღწერა</h3><p>${esc(n.desc)}</p></div>` : ''}
@@ -423,6 +429,7 @@ function showSelected(m) {
 // ---------------------------------------------------------------- interaction
 function setMode(m) {
   if (mode === 'micro' && m !== 'micro') { MICRO.leave(); ctl.enabled = true; }
+  if (m !== 'patho') exitPathoMicro();
   mode = m; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
   document.body.dataset.mode = m;
   $('#attr').innerHTML = m === 'micro' ? 'უჯრედული დონე: სქემატური 3D, მასშტაბი პირობითია' : '3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია';
@@ -434,6 +441,17 @@ function setMode(m) {
 let curMicro = 0, vmHist = [];
 const MICRO_LEGEND = [['Na⁺', 0xffcc4d], ['K⁺', 0xb48cff], ['Ca²⁺', 0x4fd6ff], ['ნეირომედიატორი', 0xff7a59], ['მოქმედების პოტენციალი', 0xffa640]];
 function openMicro(i, instant) { curMicro = (i + MICRO.steps.length) % MICRO.steps.length; vmHist = []; MICRO.enter(curMicro, instant); renderLeft(); renderRight(); setLegend(MICRO_LEGEND); if (isPhone()) setCollapsed('#left', true); }
+let eppT = 0;
+function drawEpp(v) {
+  const cv = document.getElementById('eppChart'); if (!cv) return;
+  const dpr = Math.min(devicePixelRatio, 2), w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const L = 8, B = 20, T = 10, max = 1.5, y = a => T + (1 - a / max) * (h - T - B), bw = (w - L * 2) / v.n;
+  g.font = '10px "Noto Sans Georgian",sans-serif';
+  v.epp.forEach((a, i) => { g.fillStyle = a >= v.thr ? '#63b57d' : '#e2574c'; g.fillRect(L + i * bw + bw * .2, y(a), bw * .6, y(0) - y(a)); g.fillStyle = '#8a9199'; g.fillText(String(i + 1), L + i * bw + bw * .45, h - 6); });
+  g.strokeStyle = '#e6c46e'; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(L, y(v.thr)); g.lineTo(w - L, y(v.thr)); g.stroke(); g.setLineDash([]);
+  g.fillStyle = '#e6c46e'; g.fillText('ზღურბლი', w - L - 50, y(v.thr) - 4);
+}
 function drawVm(v) {
   const cv = document.getElementById('vmChart'); if (!cv) return;
   const dpr = Math.min(devicePixelRatio, 2), w = cv.clientWidth, h = cv.clientHeight; if (cv.width !== w * dpr) { cv.width = w * dpr; cv.height = h * dpr; }
@@ -448,11 +466,11 @@ function drawVm(v) {
     const o = document.getElementById('vmVal'); if (o) o.textContent = 'Vm ' + (last > 0 ? '+' : '') + Math.round(last) + ' mV'; }
 }
 function openNoso(n, step = 0) {
-  curNoso = n; curStep = step; renderLeft(); renderRight(); setLegend(PATHO_LEGEND);
+  curNoso = n; curStep = step; renderLeft(); renderRight(); setLegend(n.steps[step].fx.micro ? PATHO_LEGEND_MICRO : PATHO_LEGEND);
   applyFx(n.steps[step].fx, n);
   if (isPhone()) setCollapsed('#left', true);
 }
-function setStep(i) { curStep = (i + curNoso.steps.length) % curNoso.steps.length; renderRight(); applyFx(curNoso.steps[curStep].fx, curNoso); }
+function setStep(i) { curStep = (i + curNoso.steps.length) % curNoso.steps.length; renderRight(); applyFx(curNoso.steps[curStep].fx, curNoso); setLegend(curNoso.steps[curStep].fx.micro ? PATHO_LEGEND_MICRO : PATHO_LEGEND); }
 
 document.querySelector('.mode').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setMode(b.dataset.m); });
 $('#leftBody').addEventListener('click', e => {
@@ -477,7 +495,7 @@ addEventListener('keydown', e => { if (mode === 'micro' && !/INPUT/.test(documen
 
 const ray = new THREE.Raycaster(), mv = new THREE.Vector2();
 function pick(ev) {
-  if (mode === 'micro') return null;
+  if (mode === 'micro' || pathoMicro) return null;
   const r = R.domElement.getBoundingClientRect(); mv.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
   ray.setFromCamera(mv, cam);
   const cands = ALL.filter(m => m.visible && m.material !== skinMat && m.material.opacity > .2);
@@ -505,7 +523,7 @@ const clock = new THREE.Clock(); const tmp = new THREE.Color();
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), .05), now = performance.now(), T = now / 1000;
-  if (mode === 'micro') { const v = MICRO.update(dt); drawVm(v); R.render(MICRO.scene, MICRO.cam); return; }
+  if (mode === 'micro' || pathoMicro) { const v = MICRO.update(dt); if (typeof v === 'number') drawVm(v); else if (v && v.epp) drawEpp(v); R.render(MICRO.scene, MICRO.cam); return; }
   if (tween) { tween.t = Math.min(1, tween.t + dt / .9); const k = 1 - Math.pow(1 - tween.t, 3);
     ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
   ctl.update();
