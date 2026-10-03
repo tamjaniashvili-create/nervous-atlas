@@ -200,7 +200,7 @@ window.createMicro = function (R) {
 
   // ------------------------------------------------------------- camera presets
   const CAMS = { neuron: [[10, 0, 0], [6, 12, 58]], rest: [[0, -40, 0], [0, -34, 21]], ap: [[0, -40, 0], [4, -34.5, 19]], salt: [[12.5, 0, 0], [12.5, 4, 17]],
-    ca: [[60, 2.8, 0], [60, 4.6, 14]], exo: [[60, 1.4, 0], [61, 3.2, 13.5]], rec: [[60, -1, 0], [62, 1.2, 15]], nmj: [[120, -6, 0], [134, 0, 30]], lems: [[60, 1.2, 0], [61.5, -.6, 12.5]] };
+    ca: [[60, 2.8, 0], [60, 4.6, 14]], exo: [[60, 1.4, 0], [61, 3.2, 13.5]], rec: [[60, -1, 0], [62, 1.2, 15]], nmj: [[120, -6, 0], [134, 0, 30]], lems: [[60, 1.2, 0], [61.5, -.6, 12.5]], nerve: [[0, 40, 0], [7.5, 44, 12]] };
   let tween = null;
   function go(k) { const c = CAMS[k]; const tt = V(...c[0]), tp = V(...c[1]); const asp = innerWidth / innerHeight; if (asp < 1.2) tp.sub(tt).multiplyScalar(Math.min(2.4, 1.3 / asp)).add(tt); tween = { t: 0, ft: ctl.target.clone(), fp: cam.position.clone(), tt, tp }; }
   function snap(k) { go(k); ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; }
@@ -325,17 +325,62 @@ window.createMicro = function (R) {
     lems_facil: [['Ca²⁺ გროვდება ყოველ იმპულსზე', V(64, 1.6, 0)], ['გამოყოფა თანდათან იზრდება', V(60, .95, 1.5)], ['EPP ზღურბლს აღწევს', V(61, -3, 0)]],
   };
 
+
+  // ------------------------------------------------------------- peripheral nerve repair bench (0,40,0)
+  const NR = new THREE.Group(); NR.position.set(0, 40, 0); scene.add(NR);
+  const FASC = [[0, 0, .42, 0xe9a35b], [.62, .3, .3, 0xd88a8a], [-.55, .35, .33, 0xe9c25b], [.2, -.7, .32, 0x8fc28a], [-.45, -.55, .28, 0xc98ad8], [.72, -.35, .24, 0x8ab4e0], [-.12, .78, .26, 0xe07a5b]];
+  function stump(sign) {
+    const g = new THREE.Group(); const inner = new THREE.Group(); g.add(inner);
+    const epi = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 8, 40, 1, true), mat(0xf0dca6, { transparent: true, opacity: .42, side: THREE.DoubleSide, depthWrite: false, emissive: lin(0x2a2410) }));
+    epi.rotation.z = Math.PI / 2; epi.position.x = sign * 4; inner.add(epi);
+    const cap = new THREE.Mesh(new THREE.CircleGeometry(1.25, 40), mat(0xf6e7c0, { transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false }));
+    cap.rotation.y = Math.PI / 2; cap.position.x = 0; cap.userData.id = sign < 0 ? 'endP' : 'endD'; inner.add(cap);
+    for (const [y, z, r, c] of FASC) { const f = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 8, 20), mat(c, { emissive: lin(c).multiplyScalar(.12) })); f.rotation.z = Math.PI / 2; f.position.set(sign * 4.02, y, z); inner.add(f);
+      const face = new THREE.Mesh(new THREE.CircleGeometry(r * .98, 20), mat(c, { emissive: lin(c).multiplyScalar(.35), side: THREE.DoubleSide })); face.rotation.y = Math.PI / 2; face.position.set(-sign * .02, y, z); face.userData.id = cap.userData.id; inner.add(face); }
+    const ves = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, 8, 8), mat(0xc0392b, { emissive: lin(0x3a0808) })); ves.rotation.z = Math.PI / 2; ves.position.set(sign * 4, 1.28, 0); inner.add(ves);
+    const fg = new THREE.TorusGeometry(1.2, .22, 8, 36); const fp = fg.attributes.position; for (let i = 0; i < fp.count; i++) { const k = 1 + .35 * Math.sin(i * 1.7) * Math.cos(i * .9); fp.setXYZ(i, fp.getX(i) * (1 + .05 * k), fp.getY(i) * (1 + .05 * k), fp.getZ(i) * k); } fg.computeVertexNormals();
+    const fray = new THREE.Mesh(fg, mat(0xd9c49a, { emissive: lin(0x201808), roughness: .9 })); fray.rotation.y = Math.PI / 2; fray.position.x = -sign * .1; fray.userData.id = cap.userData.id; inner.add(fray);
+    g.userData = { inner, fray, sign }; NR.add(g); return g;
+  }
+  const PROX = stump(-1), DIST = stump(1);
+  const SUT = []; for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + .26; const p = V(0, Math.cos(a) * 1.32, Math.sin(a) * 1.32);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(.17, 12, 10), new THREE.MeshBasicMaterial({ color: lin(0x4fd6ff), transparent: true, opacity: .75, depthTest: false })); m.position.copy(p); m.renderOrder = 22; m.userData.id = 'sut' + i; m.visible = false; NR.add(m);
+    const knot = new THREE.Mesh(new THREE.TorusGeometry(.16, .035, 8, 16), mat(0x2b3a8a, { emissive: lin(0x0a1030) })); knot.position.copy(p); knot.rotation.y = Math.PI / 2; knot.visible = false; NR.add(knot); SUT.push({ m, knot, done: false }); }
+  const GROW = []; for (let i = 0; i < 14; i++) { const f = FASC[i % FASC.length]; const s = spr(lin(C.glow), .35); s.visible = false; NR.add(s); GROW.push({ s, f, o: i / 14 }); }
+  const nerve = { gap: 1, rot: 63, deb: { endP: false, endD: false }, coapt: 0, grow: false };
+  function nerveApply() {
+    const g = nerve.gap * (1 - nerve.coapt) + .03 * nerve.coapt;
+    PROX.position.x = -g; DIST.position.x = g;
+    PROX.userData.fray.visible = !nerve.deb.endP; DIST.userData.fray.visible = !nerve.deb.endD;
+    DIST.userData.inner.rotation.x = nerve.rot * Math.PI / 180;
+  }
+  const NERVE_API = {
+    reset() { nerve.gap = 1; nerve.rot = 63; nerve.deb = { endP: false, endD: false }; nerve.coapt = 0; nerve.grow = false; SUT.forEach(s => { s.done = false; s.m.visible = false; s.knot.visible = false; }); GROW.forEach(g => g.s.visible = false); nerveApply(); },
+    debride(id) { if (nerve.deb[id]) return false; nerve.deb[id] = true; nerve.gap += .3; nerveApply(); return nerve.deb.endP && nerve.deb.endD; },
+    setRot(d) { nerve.rot = d; nerveApply(); }, getRot: () => nerve.rot,
+    showSutures(on) { SUT.forEach(s => { s.m.visible = on && !s.done; }); },
+    suture(id) { const s = SUT.find(x => x.m.userData.id === id); if (!s || s.done) return SUT.filter(x => x.done).length; s.done = true; s.m.visible = false; s.knot.visible = true; nerve.coapt = Math.min(1, SUT.filter(x => x.done).length / 4); nerveApply(); return SUT.filter(x => x.done).length; },
+    regrow(on) { nerve.grow = on; GROW.forEach(g => g.s.visible = on); },
+    state: nerve,
+  };
+  function nerveAnim(t) { if (nerve.grow) GROW.forEach(g => { const k = ((t * .18 + g.o) % 1); const [y, z] = g.f; const a = nerve.rot * Math.PI / 180, cy = y * Math.cos(a) - z * Math.sin(a), cz = y * Math.sin(a) + z * Math.cos(a); g.s.position.set(-4 + k * 12, k < .33 ? y : cy, k < .33 ? z : cz); g.s.material.opacity = k > .9 ? (1 - k) * 10 : 1; }); return null; }
+  const NLBL = [['პროქსიმალური ბოლო', V(-5, 41.9, 0)], ['დისტალური ბოლო', V(5, 41.9, 0)], ['ეპინევრიუმის სისხლძარღვი', V(-6.5, 41.5, 0)], ['ფასციკულები', V(-2.5, 39.2, 1.4)]];
+
   // ------------------------------------------------------------- public API
-  let active = false;
+  let active = false, nerveMode = false; const nray = new THREE.Raycaster(), nv = new THREE.Vector2();
   return {
+    nerve: NERVE_API,
+    nerveScreen(id) { let o = null; NR.traverse(x => { if (!o && x.isMesh && x.userData.id === id && (x.geometry.type === 'CircleGeometry' || /^sut/.test(id))) o = x; }); if (!o) return null; const p = new THREE.Vector3(); o.getWorldPosition(p); p.project(cam); return { x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight }; },
+    enterNerve(instant) { active = true; patho = null; nerveMode = true; resetPatho(); T = 0; NERVE_API.reset(); if (instant) snap('nerve'); else go('nerve'); setLabels(NLBL); labelLayer.style.display = ''; },
+    pickNerve(ev, rect) { nv.set((ev.clientX - rect.left) / rect.width * 2 - 1, -(ev.clientY - rect.top) / rect.height * 2 + 1); nray.setFromCamera(nv, cam); const objs = []; NR.traverse(o => { if (o.isMesh && o.visible && o.userData.id) objs.push(o); }); const hs = nray.intersectObjects(objs, false); const su = hs.find(h => /^sut/.test(h.object.userData.id)); return su ? su.object.userData.id : hs[0] ? hs[0].object.userData.id : null; },
     scene, cam, ctl, steps: MICRO_STEPS,
-    enter(i, instant) { active = true; patho = null; resetPatho(); step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
-    enterPatho(cfg, instant) { active = true; patho = cfg.anim; T = 0; resetDynamic(); resetPatho(); if (instant) snap(cfg.view); else go(cfg.view); setLabels(PLBL[cfg.anim]); labelLayer.style.display = ''; },
-    leave() { active = false; resetPatho(); labelLayer.style.display = 'none'; ctl.enabled = false; },
+    enter(i, instant) { active = true; nerveMode = false; patho = null; resetPatho(); step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
+    enterPatho(cfg, instant) { active = true; nerveMode = false; patho = cfg.anim; T = 0; resetDynamic(); resetPatho(); if (instant) snap(cfg.view); else go(cfg.view); setLabels(PLBL[cfg.anim]); labelLayer.style.display = ''; },
+    leave() { active = false; nerveMode = false; resetPatho(); labelLayer.style.display = 'none'; ctl.enabled = false; },
     finish() { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } },
     update(dt) { if (!active) return null; T += dt;
       if (tween) { tween.t = Math.min(1, tween.t + dt / 1.1); const k = 1 - Math.pow(1 - tween.t, 3); ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
-      ctl.update(); const v = patho ? ANIM_P[patho](T) : ANIM[MICRO_STEPS[step].id](T); placeLabels(); return v; },
+      ctl.update(); const v = nerveMode ? nerveAnim(T) : patho ? ANIM_P[patho](T) : ANIM[MICRO_STEPS[step].id](T); placeLabels(); return v; },
     Vm,
   };
 };

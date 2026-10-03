@@ -6,6 +6,8 @@ Interactive 3D atlas of the human nervous system for medical education, with two
 - **ნეირონი (Cellular level):** 8 animated steps: neuron and glia, resting potential, action potential with a live Vm(t) trace, saltatory conduction, Ca²⁺ entry, SNARE exocytosis, receptor binding and EPSP, and the neuromuscular junction with sarcomere contraction. Each step lists its drug targets and clinical links. The geometry here is schematic and procedural (not BodyParts3D).
 - **პათოლოგია (Pathology):** 17 nosologies, including myasthenia gravis and Lambert–Eaton syndrome, which are animated at the synapse level with antibodies, receptor loss, and an EPP decrement/increment chart. Each one has an ICD-10 code, a description, a 4-step pathogenesis animated on the model, the clinical picture, and references.
 
+- **ჩარევა (Interventions):** interactive simulations. Acute ischemic stroke is a timed decision scenario (imaging, IVT dosing, mechanical thrombectomy by clicking the occlusion, post-care, secondary prevention). L5–S1 microdiscectomy and median nerve repair (debridement, fascicular alignment, epineural sutures, regeneration) are step-by-step procedures where you pick a tool and click the right spot.
+
 `/schematic/` holds the earlier procedural version, which has nerve–muscle signal animation and a quiz.
 
 ## Data and attribution
@@ -24,7 +26,7 @@ The meshes were adapted as follows:
 |---|---|
 | `index.html` | the app (Three.js r128) |
 | `pack.json` / `pack.wasm` | mesh manifest and raw mesh bytes (`.wasm` extension only so hosts serve it as binary) |
-| `src/` | page head/CSS, engine, Georgian names (`names.js`), pathology content (`nosology.js`) |
+| `src/` | page head/CSS, engine, Georgian names (`names.js`), pathology content (`nosology.js`), cellular scenes (`micro.js`), simulations (`sims.js`) |
 | `tools/` | mesh extraction and build scripts |
 | `schematic/` | previous procedural version |
 

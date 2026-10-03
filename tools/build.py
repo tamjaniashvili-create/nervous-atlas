@@ -2,7 +2,7 @@ import os, shutil, hashlib
 S='/tmp/claude-0/-home-claude/3c964dd8-8879-5543-b180-e8a6d4259db9/scratchpad'
 R=os.path.dirname(os.path.abspath(__file__))
 head=open(f'{R}/src/head.html').read()
-js=''.join(open(f'{R}/src/{f}').read()+'\n' for f in ['names.js','nosology.js','micro.js'])
+js=''.join(open(f'{R}/src/{f}').read()+'\n' for f in ['names.js','nosology.js','micro.js','sims.js'])
 eng=open(f'{R}/src/engine.js').read()
 def page(three, orbit, pack):
     return (head + f'\n<script src="{three}"></script>\n<script src="{orbit}"></script>\n'

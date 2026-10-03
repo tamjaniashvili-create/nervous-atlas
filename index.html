@@ -39,6 +39,17 @@ a{color:var(--myelin)}
 .mode button[aria-pressed="true"]{background:var(--ink);color:#11161c}
 .mode button[data-m="patho"][aria-pressed="true"]{background:var(--lesion);color:#fff}
 .mode button[data-m="micro"][aria-pressed="true"]{background:#8f78d6;color:#fff}
+.mode button[data-m="sim"][aria-pressed="true"]{background:#2f9e8f;color:#fff}
+.opts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.opt{text-align:left;border:1px solid var(--line2);background:rgba(236,230,218,.03);border-radius:9px;padding:9px 11px;cursor:pointer;font-size:13px;line-height:1.4}
+.opt:hover:not(:disabled){border-color:var(--ink2)}
+.opt.good{border-color:var(--green);background:rgba(99,181,125,.12)}
+.opt.bad{border-color:var(--lesion);background:rgba(226,87,76,.10)}
+.opt:disabled{cursor:default}
+.fb{margin-top:10px;border-left:3px solid var(--ink2);padding:8px 10px;background:rgba(0,0,0,.2);border-radius:0 8px 8px 0;font-size:13px}
+.fb.good{border-color:var(--green)}
+.fb.bad{border-color:var(--lesion)}
+.chip:disabled{opacity:.45;cursor:default}
 .top .sp{flex:1}
 .toplinks{display:flex;gap:14px;align-items:center;font-size:12.5px}
 .toplinks a{color:var(--ink2);text-decoration:none;border-bottom:1px solid var(--line2)}
@@ -143,7 +154,7 @@ a{color:var(--myelin)}
   .brand span,.toplinks .hide-s{display:none}
   .brand b{font-size:15px;white-space:nowrap}
   .top .sp{display:none}
-  .mode button{padding:5px 9px;font-size:12.5px}
+  .mode button{padding:5px 4px;font-size:12px}
   #left{left:10px;right:10px;top:auto;bottom:calc(var(--rh,42vh) + 16px + env(safe-area-inset-bottom,0px));width:auto;max-height:calc(100vh - var(--rh,42vh) - 150px);max-height:calc(100dvh - var(--rh,42vh) - 150px)}
   #left.col{max-height:none;bottom:calc(var(--rh,42vh) + 16px + env(safe-area-inset-bottom,0px))}
   #right{left:10px;right:10px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;height:42vh;height:42dvh}
@@ -163,6 +174,7 @@ a{color:var(--myelin)}
     <button type="button" data-m="norm" aria-pressed="true">ნორმა</button>
     <button type="button" data-m="micro" aria-pressed="false">ნეირონი</button>
     <button type="button" data-m="patho" aria-pressed="false">პათოლოგია</button>
+    <button type="button" data-m="sim" aria-pressed="false">ჩარევა</button>
   </div>
   <div class="sp"></div>
   <nav class="toplinks">
@@ -855,7 +867,7 @@ window.createMicro = function (R) {
 
   // ------------------------------------------------------------- camera presets
   const CAMS = { neuron: [[10, 0, 0], [6, 12, 58]], rest: [[0, -40, 0], [0, -34, 21]], ap: [[0, -40, 0], [4, -34.5, 19]], salt: [[12.5, 0, 0], [12.5, 4, 17]],
-    ca: [[60, 2.8, 0], [60, 4.6, 14]], exo: [[60, 1.4, 0], [61, 3.2, 13.5]], rec: [[60, -1, 0], [62, 1.2, 15]], nmj: [[120, -6, 0], [134, 0, 30]], lems: [[60, 1.2, 0], [61.5, -.6, 12.5]] };
+    ca: [[60, 2.8, 0], [60, 4.6, 14]], exo: [[60, 1.4, 0], [61, 3.2, 13.5]], rec: [[60, -1, 0], [62, 1.2, 15]], nmj: [[120, -6, 0], [134, 0, 30]], lems: [[60, 1.2, 0], [61.5, -.6, 12.5]], nerve: [[0, 40, 0], [7.5, 44, 12]] };
   let tween = null;
   function go(k) { const c = CAMS[k]; const tt = V(...c[0]), tp = V(...c[1]); const asp = innerWidth / innerHeight; if (asp < 1.2) tp.sub(tt).multiplyScalar(Math.min(2.4, 1.3 / asp)).add(tt); tween = { t: 0, ft: ctl.target.clone(), fp: cam.position.clone(), tt, tp }; }
   function snap(k) { go(k); ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; }
@@ -980,20 +992,234 @@ window.createMicro = function (R) {
     lems_facil: [['Ca²⁺ გროვდება ყოველ იმპულსზე', V(64, 1.6, 0)], ['გამოყოფა თანდათან იზრდება', V(60, .95, 1.5)], ['EPP ზღურბლს აღწევს', V(61, -3, 0)]],
   };
 
+
+  // ------------------------------------------------------------- peripheral nerve repair bench (0,40,0)
+  const NR = new THREE.Group(); NR.position.set(0, 40, 0); scene.add(NR);
+  const FASC = [[0, 0, .42, 0xe9a35b], [.62, .3, .3, 0xd88a8a], [-.55, .35, .33, 0xe9c25b], [.2, -.7, .32, 0x8fc28a], [-.45, -.55, .28, 0xc98ad8], [.72, -.35, .24, 0x8ab4e0], [-.12, .78, .26, 0xe07a5b]];
+  function stump(sign) {
+    const g = new THREE.Group(); const inner = new THREE.Group(); g.add(inner);
+    const epi = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.25, 8, 40, 1, true), mat(0xf0dca6, { transparent: true, opacity: .42, side: THREE.DoubleSide, depthWrite: false, emissive: lin(0x2a2410) }));
+    epi.rotation.z = Math.PI / 2; epi.position.x = sign * 4; inner.add(epi);
+    const cap = new THREE.Mesh(new THREE.CircleGeometry(1.25, 40), mat(0xf6e7c0, { transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false }));
+    cap.rotation.y = Math.PI / 2; cap.position.x = 0; cap.userData.id = sign < 0 ? 'endP' : 'endD'; inner.add(cap);
+    for (const [y, z, r, c] of FASC) { const f = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 8, 20), mat(c, { emissive: lin(c).multiplyScalar(.12) })); f.rotation.z = Math.PI / 2; f.position.set(sign * 4.02, y, z); inner.add(f);
+      const face = new THREE.Mesh(new THREE.CircleGeometry(r * .98, 20), mat(c, { emissive: lin(c).multiplyScalar(.35), side: THREE.DoubleSide })); face.rotation.y = Math.PI / 2; face.position.set(-sign * .02, y, z); face.userData.id = cap.userData.id; inner.add(face); }
+    const ves = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, 8, 8), mat(0xc0392b, { emissive: lin(0x3a0808) })); ves.rotation.z = Math.PI / 2; ves.position.set(sign * 4, 1.28, 0); inner.add(ves);
+    const fg = new THREE.TorusGeometry(1.2, .22, 8, 36); const fp = fg.attributes.position; for (let i = 0; i < fp.count; i++) { const k = 1 + .35 * Math.sin(i * 1.7) * Math.cos(i * .9); fp.setXYZ(i, fp.getX(i) * (1 + .05 * k), fp.getY(i) * (1 + .05 * k), fp.getZ(i) * k); } fg.computeVertexNormals();
+    const fray = new THREE.Mesh(fg, mat(0xd9c49a, { emissive: lin(0x201808), roughness: .9 })); fray.rotation.y = Math.PI / 2; fray.position.x = -sign * .1; fray.userData.id = cap.userData.id; inner.add(fray);
+    g.userData = { inner, fray, sign }; NR.add(g); return g;
+  }
+  const PROX = stump(-1), DIST = stump(1);
+  const SUT = []; for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + .26; const p = V(0, Math.cos(a) * 1.32, Math.sin(a) * 1.32);
+    const m = new THREE.Mesh(new THREE.SphereGeometry(.17, 12, 10), new THREE.MeshBasicMaterial({ color: lin(0x4fd6ff), transparent: true, opacity: .75, depthTest: false })); m.position.copy(p); m.renderOrder = 22; m.userData.id = 'sut' + i; m.visible = false; NR.add(m);
+    const knot = new THREE.Mesh(new THREE.TorusGeometry(.16, .035, 8, 16), mat(0x2b3a8a, { emissive: lin(0x0a1030) })); knot.position.copy(p); knot.rotation.y = Math.PI / 2; knot.visible = false; NR.add(knot); SUT.push({ m, knot, done: false }); }
+  const GROW = []; for (let i = 0; i < 14; i++) { const f = FASC[i % FASC.length]; const s = spr(lin(C.glow), .35); s.visible = false; NR.add(s); GROW.push({ s, f, o: i / 14 }); }
+  const nerve = { gap: 1, rot: 63, deb: { endP: false, endD: false }, coapt: 0, grow: false };
+  function nerveApply() {
+    const g = nerve.gap * (1 - nerve.coapt) + .03 * nerve.coapt;
+    PROX.position.x = -g; DIST.position.x = g;
+    PROX.userData.fray.visible = !nerve.deb.endP; DIST.userData.fray.visible = !nerve.deb.endD;
+    DIST.userData.inner.rotation.x = nerve.rot * Math.PI / 180;
+  }
+  const NERVE_API = {
+    reset() { nerve.gap = 1; nerve.rot = 63; nerve.deb = { endP: false, endD: false }; nerve.coapt = 0; nerve.grow = false; SUT.forEach(s => { s.done = false; s.m.visible = false; s.knot.visible = false; }); GROW.forEach(g => g.s.visible = false); nerveApply(); },
+    debride(id) { if (nerve.deb[id]) return false; nerve.deb[id] = true; nerve.gap += .3; nerveApply(); return nerve.deb.endP && nerve.deb.endD; },
+    setRot(d) { nerve.rot = d; nerveApply(); }, getRot: () => nerve.rot,
+    showSutures(on) { SUT.forEach(s => { s.m.visible = on && !s.done; }); },
+    suture(id) { const s = SUT.find(x => x.m.userData.id === id); if (!s || s.done) return SUT.filter(x => x.done).length; s.done = true; s.m.visible = false; s.knot.visible = true; nerve.coapt = Math.min(1, SUT.filter(x => x.done).length / 4); nerveApply(); return SUT.filter(x => x.done).length; },
+    regrow(on) { nerve.grow = on; GROW.forEach(g => g.s.visible = on); },
+    state: nerve,
+  };
+  function nerveAnim(t) { if (nerve.grow) GROW.forEach(g => { const k = ((t * .18 + g.o) % 1); const [y, z] = g.f; const a = nerve.rot * Math.PI / 180, cy = y * Math.cos(a) - z * Math.sin(a), cz = y * Math.sin(a) + z * Math.cos(a); g.s.position.set(-4 + k * 12, k < .33 ? y : cy, k < .33 ? z : cz); g.s.material.opacity = k > .9 ? (1 - k) * 10 : 1; }); return null; }
+  const NLBL = [['პროქსიმალური ბოლო', V(-5, 41.9, 0)], ['დისტალური ბოლო', V(5, 41.9, 0)], ['ეპინევრიუმის სისხლძარღვი', V(-6.5, 41.5, 0)], ['ფასციკულები', V(-2.5, 39.2, 1.4)]];
+
   // ------------------------------------------------------------- public API
-  let active = false;
+  let active = false, nerveMode = false; const nray = new THREE.Raycaster(), nv = new THREE.Vector2();
   return {
+    nerve: NERVE_API,
+    nerveScreen(id) { let o = null; NR.traverse(x => { if (!o && x.isMesh && x.userData.id === id && (x.geometry.type === 'CircleGeometry' || /^sut/.test(id))) o = x; }); if (!o) return null; const p = new THREE.Vector3(); o.getWorldPosition(p); p.project(cam); return { x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight }; },
+    enterNerve(instant) { active = true; patho = null; nerveMode = true; resetPatho(); T = 0; NERVE_API.reset(); if (instant) snap('nerve'); else go('nerve'); setLabels(NLBL); labelLayer.style.display = ''; },
+    pickNerve(ev, rect) { nv.set((ev.clientX - rect.left) / rect.width * 2 - 1, -(ev.clientY - rect.top) / rect.height * 2 + 1); nray.setFromCamera(nv, cam); const objs = []; NR.traverse(o => { if (o.isMesh && o.visible && o.userData.id) objs.push(o); }); const hs = nray.intersectObjects(objs, false); const su = hs.find(h => /^sut/.test(h.object.userData.id)); return su ? su.object.userData.id : hs[0] ? hs[0].object.userData.id : null; },
     scene, cam, ctl, steps: MICRO_STEPS,
-    enter(i, instant) { active = true; patho = null; resetPatho(); step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
-    enterPatho(cfg, instant) { active = true; patho = cfg.anim; T = 0; resetDynamic(); resetPatho(); if (instant) snap(cfg.view); else go(cfg.view); setLabels(PLBL[cfg.anim]); labelLayer.style.display = ''; },
-    leave() { active = false; resetPatho(); labelLayer.style.display = 'none'; ctl.enabled = false; },
+    enter(i, instant) { active = true; nerveMode = false; patho = null; resetPatho(); step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
+    enterPatho(cfg, instant) { active = true; nerveMode = false; patho = cfg.anim; T = 0; resetDynamic(); resetPatho(); if (instant) snap(cfg.view); else go(cfg.view); setLabels(PLBL[cfg.anim]); labelLayer.style.display = ''; },
+    leave() { active = false; nerveMode = false; resetPatho(); labelLayer.style.display = 'none'; ctl.enabled = false; },
     finish() { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } },
     update(dt) { if (!active) return null; T += dt;
       if (tween) { tween.t = Math.min(1, tween.t + dt / 1.1); const k = 1 - Math.pow(1 - tween.t, 3); ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
-      ctl.update(); const v = patho ? ANIM_P[patho](T) : ANIM[MICRO_STEPS[step].id](T); placeLabels(); return v; },
+      ctl.update(); const v = nerveMode ? nerveAnim(T) : patho ? ANIM_P[patho](T) : ANIM[MICRO_STEPS[step].id](T); placeLabels(); return v; },
     Vm,
   };
 };
+
+/* ჩარევა: ინტერაქტიული მოდელირებები.
+   step.type: 'choice' (ვარიანტები, ok/fb/min) · 'tool' (ინსტრუმენტი + დაწკაპება მოდელზე) · 'slider' (ნერვის ორიენტაცია)
+   step.fx — სცენა ეტაპის დასაწყისში; step.done — სცენა წარმატების შემდეგ (engine → applyFx / ნერვის API). */
+const SIM_SOON = [
+  ['ჰიპოფიზის ადენომის ტრანსსფენოიდური ამოკვეთა', 'ჰიპოფიზი'],
+  ['ტრეპანაცია (კრანიოტომია)', 'თავის ქალა'],
+  ['თავის ტვინის სიმსივნის ამოკვეთა', 'ექსტრიპაცია'],
+  ['ვენტრიკულო-პერიტონეული შუნტი', 'ჰიდროცეფალია'],
+  ['EC–IC ბაიპასი (STA–MCA)', 'რევასკულარიზაცია'],
+];
+const STROKE_BRAIN = ['cortex', 'cerebellum', 'stem', 'deep', 'artery'];
+const MCA_CLOT = { c: 'sphenoid part of left middle cerebral' };
+const SIMS = [
+{
+  id: 'stroke', ka: 'იშემიური ინსულტი: მწვავე ფაზის მართვა', en: 'Acute ischemic stroke — reperfusion', kind: 'კლინიკური სცენარი + თრომბექტომია', scene: 'macro', clock: 70,
+  case: '67 წლის მამაკაცი, წინაგულების ფიბრილაციით (ანტიკოაგულანტს არ იღებს). 09:00-ზე უეცრად განუვითარდა მარჯვენამხრივი სისუსტე და მეტყველების დარღვევა. საავადმყოფოში მივიდა 10:10-ზე. NIHSS 16, AP 178/96 mmHg, გლუკოზა 7,4 mmol/L, წონა 80 კგ.',
+  show: STROKE_BRAIN, op: { cortex: .25, cerebellum: .4 },
+  steps: [
+    { type: 'choice', t: 'პირველი ნაბიჯი', q: 'პაციენტი ახლახან შემოიყვანეს. რას აკეთებთ პირველ რიგში?',
+      fx: { cam: 'brainL', hl: [{ m: 'left middle cerebral', c: 'red', g: ['artery'] }], lesion: [{ at: MCA_CLOT, r: .004 }], dim: true },
+      opts: [
+        { t: 'არაკონტრასტული CT + CT-ანგიოგრაფია დაუყოვნებლივ', ok: 1, min: 15, fb: 'სწორია. ჯერ ჰემორაგია უნდა გამოირიცხოს და დიდი სისხლძარღვის ოკლუზია (LVO) გამოვლინდეს. სამიზნე დრო მისვლიდან გამოკვლევამდე (door-to-imaging) ≤ 20–25 წთ-ია.' },
+        { t: 'ასპირინი 300 მგ', min: 10, fb: 'ჰემორაგია ჯერ გამორიცხული არ არის. თუ თრომბოლიზისი ჩატარდება, ანტიაგრეგანტი პირველ 24 საათში არ ინიშნება.' },
+        { t: 'AP-ის სწრაფი დაწევა 130/80-მდე', min: 10, fb: 'მწვავე იშემიისას AP სწრაფად არ ვწევთ, რადგან პენუმბრის პერფუზია წნევაზეა დამოკიდებული. თრომბოლიზისამდე საკმარისია < 185/110 mmHg.' },
+        { t: 'MRI სრული პროტოკოლით', min: 25, fb: 'MRI ინფორმაციულია, მაგრამ დროს კარგავს. როცა დაწყების დრო ცნობილია, CT/CTA საკმარისია.' },
+      ] },
+    { type: 'choice', t: 'რეპერფუზიის სტრატეგია', q: 'CT: ჰემორაგია არ არის, ASPECTS 8. CTA: მარცხენა MCA-ს M1 სეგმენტის ოკლუზია. სიმპტომის დაწყებიდან გავიდა ≈ 85 წთ. რას ირჩევთ?',
+      fx: { cam: 'brainL', show: STROKE_BRAIN, hl: [{ m: 'left middle cerebral', c: 'red', g: ['artery'] }, { m: 'left (precentral|postcentral|inferior frontal|supramarginal|insula)|posterior part of left superior temporal', c: 'amber', g: ['cortex'] }], lesion: [{ at: MCA_CLOT, r: .004 }], dim: true, note: 'ქარვისფერი: პენუმბრა (გადარჩენადი), წითელი: ოკლუზია' },
+      opts: [
+        { t: 'IV თრომბოლიზისი + დაუყოვნებლივ მექანიკური თრომბექტომია', ok: 1, min: 10, fb: 'სწორია. პაციენტი 4,5 საათის ფანჯარაშია და უკუჩვენება არ აქვს, ამიტომ IV თრომბოლიზისი ტარდება. თრომბექტომიისთვის მომზადება პარალელურად იწყება, თრომბოლიზისი მას არ უნდა აყოვნებდეს.' },
+        { t: 'მხოლოდ IV თრომბოლიზისი და დაკვირვება', min: 20, fb: 'M1 ოკლუზიისას IV თრომბოლიზისით რეკანალიზაციის ალბათობა დაბალია. LVO-ს დროს მექანიკური თრომბექტომია (≤ 6 სთ, შერჩეულ პაციენტებში ≤ 24 სთ) გამოსავალს მნიშვნელოვნად აუმჯობესებს.' },
+        { t: 'ჰეპარინის ინფუზია', min: 20, fb: 'მწვავე ფაზაში სრული დოზით ანტიკოაგულაცია არ ინიშნება: ზრდის ჰემორაგიული ტრანსფორმაციის რისკს და გამოსავალს არ აუმჯობესებს.' },
+        { t: 'პერფუზიული CT-ს დალოდება', min: 15, fb: '6 საათის ფანჯარაში, LVO-ს და ASPECTS ≥ 6-ის დროს, დამატებითი პერფუზიული კვლევა საჭირო არ არის და მხოლოდ დროს კარგავს.' },
+      ] },
+    { type: 'choice', t: 'თრომბოლიზისის დოზა', q: 'ალტეპლაზა (Alteplase), პაციენტის წონა 80 კგ. რომელია სწორი რეჟიმი?',
+      fx: { cam: 'brainL', show: STROKE_BRAIN, hl: [{ m: 'left middle cerebral', c: 'red', g: ['artery'] }], lesion: [{ at: MCA_CLOT, r: .004 }], dim: true },
+      opts: [
+        { t: '0,9 მგ/კგ = 72 მგ: 7,2 მგ ბოლუსი 1 წთ-ში, 64,8 მგ ინფუზია 60 წთ-ში', ok: 1, min: 5, fb: 'სწორია. დოზის 10% ბოლუსად, დარჩენილი 90% ინფუზიით 60 წუთში (მაქსიმუმ 90 მგ). ალტერნატივაა ტენექტეპლაზა (Tenecteplase) 0,25 მგ/კგ ერთჯერადი ბოლუსით (მაქს. 25 მგ), ანუ ამ პაციენტისთვის 20 მგ.' },
+        { t: '90 მგ: მაქსიმალური დოზა', min: 5, fb: '90 მგ მაქსიმუმია, რაც ≥ 100 კგ წონას შეესაბამება. 80 კგ-ზე დოზა 72 მგ-ია.' },
+        { t: '100 მგ 2 საათში (როგორც ფილტვის არტერიის თრომბოემბოლიისას)', min: 5, fb: 'ეს ფილტვის არტერიის თრომბოემბოლიის რეჟიმია. ინსულტისას 0,9 მგ/კგ, მაქსიმუმ 90 მგ.' },
+        { t: '0,6 მგ/კგ = 48 მგ', min: 5, fb: 'დაბალი დოზა რუტინულად რეკომენდებული არ არის. სტანდარტი 0,9 მგ/კგ-ია.' },
+      ] },
+    { type: 'tool', t: 'მექანიკური თრომბექტომია', q: 'კათეტერი ბარძაყის არტერიიდან მიყვანილია შიგნითა საძილე არტერიამდე. აირჩიეთ ინსტრუმენტი და დააჭირეთ ოკლუზიის ადგილს მოდელზე (წითელი კერა მარცხენა MCA-ზე).',
+      fx: { cam: 'vessels2', show: STROKE_BRAIN, op: { cortex: .12, cerebellum: .25 }, hl: [{ m: 'left middle cerebral', c: 'red', g: ['artery'] }, { m: 'left internal carotid', c: 'blue', g: ['artery'] }], lesion: [{ at: MCA_CLOT, r: .005 }], dim: true },
+      tools: [['stent', 'სტენტ-რეტრივერი'], ['asp', 'ასპირაციული კათეტერი'], ['balloon', 'ბალონური ანგიოპლასტიკა'], ['clip', 'ანევრიზმის კლიპი']], ok: ['stent', 'asp'],
+      toolFb: { balloon: 'ბალონური ანგიოპლასტიკა/სტენტირება ინტრაკრანიული ათეროსკლეროზული სტენოზისას გამოიყენება როგორც სამაშველო მეთოდი. კარდიოემბოლიური თრომბის დროს პირველი არჩევანი არ არის.', clip: 'კლიპი ანევრიზმის ქირურგიული მკურნალობის ინსტრუმენტია და აქ არ გამოიყენება.' },
+      target: { at: MCA_CLOT, r: .016 }, miss: 'ოკლუზია უფრო ახლოსაა, შიგნითა საძილე არტერიის ბიფურკაციის შემდეგ, MCA-ს M1 სეგმენტზე (წითელი კერა).',
+      done: { cam: 'vessels2', show: STROKE_BRAIN, op: { cortex: .2, cerebellum: .25 }, hl: [{ m: 'left middle cerebral', c: 'green', g: ['artery'] }, { m: 'left putamen', c: 'red', g: ['deep'] }], flow: [{ path: [{ c: 'left internal carotid' }, MCA_CLOT, { c: 'insular part of left middle cerebral' }], c: 'teal' }], dim: true },
+      okFb: 'რეკანალიზაცია მიღწეულია (mTICI 2b–3). პენუმბრა გადარჩა. ინფარქტის ბირთვი მცირე ზომისაა და ღრმა სტრუქტურებში მდებარეობს, რადგან ლენტიკულოსტრიულ არტერიებს კოლატერალები არ აქვთ.', min: 45 },
+    { type: 'choice', t: 'პირველი 24 საათი', q: 'თრომბოლიზისის და თრომბექტომიის შემდეგ, პირველ 24 საათში:',
+      fx: { cam: 'brainL', show: STROKE_BRAIN, hl: [{ m: 'left middle cerebral', c: 'green', g: ['artery'] }, { m: 'left putamen', c: 'red', g: ['deep'] }], dim: true },
+      opts: [
+        { t: 'AP < 180/105 mmHg; ანტითრომბოზული თერაპია მხოლოდ 24-საათიანი საკონტროლო CT/MRI-ის შემდეგ', ok: 1, fb: 'სწორია. ასევე: ნევროლოგიური მონიტორინგი, გლიკემიის კონტროლი, დისფაგიის სკრინინგი პერორალურ კვებამდე.' },
+        { t: 'ასპირინი + კლოპიდოგრელი მაშინვე', fb: 'თრომბოლიზისის შემდეგ ანტიაგრეგანტები 24 საათის განმავლობაში არ ინიშნება, სისხლდენის რისკის გამო.' },
+        { t: 'AP < 220/120 საკმარისია', fb: '220/120 ზღვარი მხოლოდ იმ პაციენტებს ეხება, ვისაც რეპერფუზია არ ჩატარებია. თრომბოლიზისის შემდეგ AP < 180/105 უნდა იყოს.' },
+      ] },
+    { type: 'choice', t: 'მეორადი პრევენცია', q: 'ინსულტის წყარო კარდიოემბოლიურია (წინაგულების ფიბრილაცია). რომელია ოპტიმალური მეორადი პრევენცია?',
+      fx: { cam: 'brainL', show: STROKE_BRAIN, hl: [{ m: 'left middle cerebral', c: 'green', g: ['artery'] }, { m: 'left putamen', c: 'red', g: ['deep'] }], dim: true },
+      opts: [
+        { t: 'პერორალური ანტიკოაგულანტი (DOAC, მაგ. აპიქსაბანი (Apixaban)); დაწყების დრო ინფარქტის ზომის მიხედვით', ok: 1, fb: 'სწორია. DOAC უპირატესია ვარფარინთან შედარებით. ადრეული დაწყება (მცირე/საშუალო ინფარქტისას ≤ 48 სთ, დიდისას 6–7 დღე) უსაფრთხოა (ELAN, 2023). ფარმაცევტისთვის: დოზა კრეატინინის კლირენსის მიხედვით, პრეპარატთა ურთიერთქმედება (P-gp, CYP3A4 ინჰიბიტორები/ინდუქტორები).' },
+        { t: 'მხოლოდ ასპირინი', fb: 'წინაგულების ფიბრილაციისას ასპირინი ინსულტის განმეორებას ანტიკოაგულაციაზე გაცილებით სუსტად აცილებს.' },
+        { t: 'ანტიკოაგულაცია ინსულტის შემდეგ უკუნაჩვენებია', fb: 'არასწორია. ანტიკოაგულაცია კარდიოემბოლიური ინსულტის მეორადი პრევენციის საფუძველია, მთავარია დაწყების დროის სწორად შერჩევა.' },
+      ] },
+  ],
+  refs: [['AHA/ASA 2019: Early Management of Acute Ischemic Stroke (Powers et al.)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Powers+2019+guidelines+early+management+acute+ischemic+stroke'], ['ESO guideline: IV thrombolysis (Berge et al. 2021)', 'https://pubmed.ncbi.nlm.nih.gov/?term=European+Stroke+Organisation+guidelines+intravenous+thrombolysis+Berge+2021'], ['ELAN trial (Fischer et al., NEJM 2023)', 'https://pubmed.ncbi.nlm.nih.gov/?term=ELAN+early+versus+later+anticoagulation+stroke+atrial+fibrillation']],
+},
+{
+  id: 'mdisc', ka: 'მიკროდისკექტომია L5–S1', en: 'Lumbar microdiscectomy', kind: 'ეტაპობრივი ოპერაცია', scene: 'macro',
+  case: '42 წლის ქალი. 10 კვირაა აქვს მარცხენამხრივი S1 რადიკულოპათია (ტკივილი დუნდულიდან ტერფის ლატერალურ კიდემდე). NSAID-ები, ფიზიოთერაპია და ეპიდურული სტეროიდი არ დაეხმარა. MRI: L5–S1 მარცხენა პარაცენტრალური ექსტრუზია. აქილევსის რეფლექსი დაქვეითებულია, პლანტარული ფლექსია 4/5. კაუდა ეკვინას ნიშნები არ აქვს.',
+  show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .55 },
+  steps: [
+    { type: 'choice', t: 'ჩვენება', q: 'არის თუ არა ოპერაციის ჩვენება და როდის?',
+      fx: { cam: 'lumbar', hl: [{ m: 'fifth lumbar', c: 'red', g: ['disc'] }, { m: 'left lumbosacral root s1', c: 'red' }], lesion: [{ at: { c: 'intervertebral disk of fifth lumbar', dx: .012, dz: -.02 }, r: .007 }], dim: true },
+      opts: [
+        { t: 'დიახ, დაგეგმილი ოპერაცია: მდგრადი რადიკულური ტკივილი > 6–8 კვირა კონსერვატიული მკურნალობის მიუხედავად, MRI-თ დადასტურებული შესაბამისი თიაქარი', ok: 1, fb: 'სწორია. მიკროდისკექტომია ტკივილს უფრო სწრაფად ხსნის, თუმცა 1–2 წლის შემდეგ შედეგები კონსერვატიულ მკურნალობას უახლოვდება. გადაწყვეტილება პაციენტთან ერთად მიიღება.' },
+        { t: 'გადაუდებელი ოპერაცია პირველ 24 საათში', fb: 'გადაუდებელია კაუდა ეკვინას სინდრომი (შარდის შეკავება, ანოგენიტალური ანესთეზია) ან მძიმე/პროგრესირებადი მოტორული დეფიციტი. ამ პაციენტს დაგეგმილი ოპერაცია სჭირდება.' },
+        { t: 'ოპერაცია ნაჩვენებია მხოლოდ დამბლის დროს', fb: 'არასწორია. თერაპიარეზისტენტული რადიკულური ტკივილი, რომელიც კლინიკას და MRI-ს შეესაბამება, დამოუკიდებელი ჩვენებაა.' },
+      ] },
+    { type: 'choice', t: 'პოზიცია', q: 'პაციენტის პოზიცია ოპერაციისას:',
+      fx: { cam: 'lumbar', hl: [{ m: 'fifth lumbar', c: 'red', g: ['disc'] }], dim: true },
+      opts: [
+        { t: 'მუცელზე (prone) Wilson-ის ჩარჩოზე ან ბალიშებზე, მუცელი თავისუფალია', ok: 1, fb: 'სწორია. როცა მუცელი თავისუფალია, ქვედა ღრუ ვენაში და ეპიდურულ ვენებში წნევა მცირდება და ოპერაციისას ნაკლები სისხლდენაა. ლორდოზის შემცირება ინტერლამინარულ „ფანჯარას" ფართოებს.' },
+        { t: 'ზურგზე (supine)', fb: 'უკანა მიდგომისთვის პაციენტი მუცელზე წევს.' },
+        { t: 'მუცელზე, მუცელზე ზეწოლით', fb: 'მუცელზე ზეწოლა ეპიდურულ ვენურ წნევას ზრდის, რაც ოპერაციისას სისხლდენას აძლიერებს.' },
+      ] },
+    { type: 'tool', t: 'დონის ლოკალიზაცია', q: 'აირჩიეთ ინსტრუმენტი და დააჭირეთ სწორ მალთაშუა დისკს.',
+      fx: { cam: 'lumbarSide', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .55 }, hl: [{ m: 'intervertebral disk', c: 'blue', g: ['disc'] }] },
+      tools: [['xray', 'ფლუოროსკოპია (C-arm)'], ['scalpel', 'სკალპელი'], ['kerrison', 'კერისონის რონჟერი'], ['retr', 'ფესვის რეტრაქტორი'], ['pit', 'ჰიპოფიზური რონჟერი']], ok: ['xray'],
+      toolFb: { scalpel: 'განაკვეთამდე დონე რენტგენით უნდა დადასტურდეს.', kerrison: 'ჯერ დონის ლოკალიზაციაა საჭირო.', retr: 'ჯერ დონის ლოკალიზაციაა საჭირო.', pit: 'ჯერ დონის ლოკალიზაციაა საჭირო.' },
+      target: { at: { c: 'intervertebral disk of fifth lumbar' }, r: .022, mesh: 'intervertebral disk of fifth lumbar' }, alt: [{ at: { c: 'intervertebral disk of fourth lumbar' }, r: .02, mesh: 'intervertebral disk of fourth lumbar', fb: 'ეს L4–L5 დისკია, არასწორი დონე! არასწორ დონეზე ოპერაცია ხერხემლის ქირურგიის ერთ-ერთი ყველაზე ხშირი შეცდომაა. დონე ყოველთვის ინტრაოპერაციული რენტგენით დაადასტურეთ.' }], miss: 'მოძებნეთ L5–S1: ქვედა წელის დისკი, უშუალოდ გავის ძვლის ზემოთ.',
+      done: { cam: 'lumbarSide', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .55 }, hl: [{ m: 'fifth lumbar', c: 'green', g: ['disc'] }], lesion: [{ at: { c: 'intervertebral disk of fifth lumbar' }, r: .006, c: 'green' }] },
+      okFb: 'L5–S1 დონე დადასტურდა. ანატომიურ ორიენტირებს (თეძოს ქედების ხაზი ≈ L4–L5) ენდობა არ შეიძლება, მხოლოდ რენტგენით დადასტურებას.' },
+    { type: 'tool', t: 'განაკვეთი და მიდგომა', q: 'გააკეთეთ ≈ 2–3 სმ-იანი შუა ხაზის განაკვეთი L5–S1-ის დონეზე (დააჭირეთ L5–S1-ის უკანა ზედაპირს შუა ხაზზე).',
+      fx: { cam: 'lumbar', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .6 }, hl: [{ m: 'fifth lumbar', c: 'green', g: ['disc'] }] },
+      tools: [['xray', 'ფლუოროსკოპია (C-arm)'], ['scalpel', 'სკალპელი'], ['kerrison', 'კერისონის რონჟერი'], ['retr', 'ფესვის რეტრაქტორი'], ['pit', 'ჰიპოფიზური რონჟერი']], ok: ['scalpel'],
+      toolFb: { xray: 'დონე უკვე დადასტურებულია.', kerrison: 'ძვალთან მისვლამდე კანი და ფასცია უნდა გაიკვეთოს.', retr: 'ფესვამდე ჯერ შორსაა.', pit: 'დისკამდე ჯერ შორსაა.' },
+      target: { at: [0, .995, -.085], r: .035 }, miss: 'განაკვეთი შუა ხაზზე, L5-ის წვეტიან მორჩსა და გავის ძვალს შორის.',
+      done: { cam: 'lumbar', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .6 }, cut: [[0, 1.012, -.1], [0, .975, -.1]] },
+      okFb: 'შუა ხაზის განაკვეთის შემდეგ ფასცია იკვეთება, მრავალნაწილოვანი კუნთი კი მარცხნივ, სუბპერიოსტეალურად გადაიწევა L5-ის რკალიდან. მიკროსკოპი შემოგვაქვს.' },
+    { type: 'tool', t: 'ლამინოტომია და ფლავექტომია', q: 'გახსენით ინტერლამინარული „ფანჯარა" მარცხნივ: მოაშორეთ L5-ის რკალის ქვედა კიდე და ყვითელი იოგი. დააჭირეთ მარცხენა ინტერლამინარულ სივრცეს.',
+      fx: { cam: 'lumbar', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .6 }, cut: [[0, 1.012, -.1], [0, .975, -.1]] },
+      tools: [['xray', 'ფლუოროსკოპია (C-arm)'], ['scalpel', 'სკალპელი'], ['kerrison', 'კერისონის რონჟერი'], ['retr', 'ფესვის რეტრაქტორი'], ['pit', 'ჰიპოფიზური რონჟერი']], ok: ['kerrison'],
+      toolFb: { scalpel: 'ძვლისა და ყვითელი იოგის მოსაშორებლად კერისონის რონჟერი გამოიყენება.', pit: 'ჰიპოფიზური რონჟერით დისკის მასალა ამოიღება, ძვალი არა.', retr: 'ფესვი ჯერ არ ჩანს: ყვითელი იოგი ფარავს.', xray: 'დონე უკვე დადასტურებულია.' },
+      target: { at: [.013, .99, -.072], r: .03 }, miss: 'მარცხენა მხარეს, შუა ხაზიდან ოდნავ ლატერალურად, L5-ის რკალსა და S1-ს შორის.',
+      done: { cam: 'lumbar', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .2 }, cut: [[0, 1.012, -.1], [0, .975, -.1]], hl: [{ m: 'left lumbosacral root s1', c: 'amber' }], lesion: [{ at: { c: 'intervertebral disk of fifth lumbar', dx: .012, dz: -.02 }, r: .007 }] },
+      okFb: 'ფანჯარა გახსნილია. ჩანს დურის ტომარა და დაჭიმული, შეშუპებული S1 ფესვი, მის ქვეშ კი თიაქარი (წითელი).' },
+    { type: 'tool', t: 'ფესვის მობილიზაცია', q: 'S1 ფესვი თიაქარზეა გადაჭიმული. ფრთხილად გადაწიეთ ის მედიალურად: დააჭირეთ ფესვს.',
+      fx: { cam: 'lumbar', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .2 }, hl: [{ m: 'left lumbosacral root s1', c: 'amber' }], lesion: [{ at: { c: 'intervertebral disk of fifth lumbar', dx: .012, dz: -.02 }, r: .007 }] },
+      tools: [['scalpel', 'სკალპელი'], ['kerrison', 'კერისონის რონჟერი'], ['retr', 'ფესვის რეტრაქტორი'], ['pit', 'ჰიპოფიზური რონჟერი'], ['bip', 'ბიპოლარული კოაგულაცია']], ok: ['retr'],
+      toolFb: { scalpel: 'ფესვთან სკალპელი არ გამოიყენება, დურის ან ფესვის დაზიანების რისკის გამო.', kerrison: 'ფესვის გადასაწევად რეტრაქტორია საჭირო.', pit: 'ფესვის გადაწევამდე თიაქარზე უსაფრთხოდ ვერ მიხვალთ.', bip: 'ბიპოლარი ეპიდურული ვენების ჰემოსტაზისთვისაა, ფესვის გადასაწევად არა.' },
+      target: { at: { c: 'left lumbosacral root s1' }, r: .025, mesh: 'left lumbosacral root s1' }, miss: 'დააჭირეთ ქარვისფერ S1 ფესვს.',
+      done: { cam: 'lumbar', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .2 }, move: [{ m: 'left lumbosacral root s1', d: [-.007, 0, 0] }], hl: [{ m: 'left lumbosacral root s1', c: 'amber' }], lesion: [{ at: { c: 'intervertebral disk of fifth lumbar', dx: .012, dz: -.02 }, r: .009 }] },
+      okFb: 'ფესვი მედიალურადაა გადაწეული და თიაქარი სრულად ჩანს. რეტრაქცია ხანმოკლე და ნაზი უნდა იყოს.' },
+    { type: 'tool', t: 'თიაქრის ამოღება', q: 'ამოიღეთ დისკის ექსტრუდირებული ფრაგმენტი: დააჭირეთ წითელ თიაქარს.',
+      fx: { cam: 'lumbar', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .2 }, move: [{ m: 'left lumbosacral root s1', d: [-.007, 0, 0] }], hl: [{ m: 'left lumbosacral root s1', c: 'amber' }], lesion: [{ at: { c: 'intervertebral disk of fifth lumbar', dx: .012, dz: -.02 }, r: .009 }] },
+      tools: [['scalpel', 'სკალპელი'], ['kerrison', 'კერისონის რონჟერი'], ['retr', 'ფესვის რეტრაქტორი'], ['pit', 'ჰიპოფიზური რონჟერი'], ['bip', 'ბიპოლარული კოაგულაცია']], ok: ['pit'],
+      toolFb: { scalpel: 'ექსტრუზიისას ფრაგმენტი ხშირად თავისუფალია და პირდაპირ ამოიღება. ფიბროზულ რგოლში ანულოტომია მხოლოდ საჭიროებისამებრ კეთდება.', kerrison: 'კერისონით ძვალი და იოგი ამოიღება, დისკის ფრაგმენტი კი ჰიპოფიზური რონჟერით.', retr: 'ფესვი უკვე გადაწეულია.', bip: 'ჰემოსტაზი საჭიროებისამებრ. ახლა ფრაგმენტი უნდა ამოიღოთ.' },
+      target: { at: { c: 'intervertebral disk of fifth lumbar', dx: .012, dz: -.02 }, r: .02 }, miss: 'დააჭირეთ წითელ ფრაგმენტს ფესვის ქვეშ.',
+      done: { cam: 'lumbar', show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .25 }, hl: [{ m: 'left lumbosacral root s1', c: 'green' }, { m: 'fifth lumbar', c: 'green', g: ['disc'] }] },
+      okFb: 'ფრაგმენტი ამოღებულია და ფესვი თავისუფალია, დაჭიმულობა აღარ აქვს. ამოწმებთ, ხომ არ დარჩა ნარჩენი ფრაგმენტები, აკეთებთ ჰემოსტაზს და ჭრილობას შრეობრივად კერავთ.' },
+    { type: 'choice', t: 'ოპერაციის შემდეგ', q: 'ოპერაციის შემდგომი მართვა:',
+      fx: { cam: 'legBack', show: ['cord', 'spinal', 'legs', 'bone', 'disc', 'muscle'], op: { bone: .2 }, hl: [{ m: 'left (lumbosacral root s1|sciatic|tibial)', c: 'green' }] },
+      opts: [
+        { t: 'ადრეული მობილიზაცია იმავე დღეს; ნევროლოგიური სტატუსის შემოწმება; ინსტრუქცია კაუდა ეკვინას, ჭრილობის ინფექციისა და ლიქვორეის ნიშნებზე', ok: 1, fb: 'სწორია. რადიკულური ტკივილი ხშირად მაშინვე მცირდება, სენსორული და მოტორული დეფიციტი კი კვირებში და თვეებში აღდგება. თიაქრის განმეორების რისკი ≈ 5–15%-ია.' },
+        { t: '2 კვირა მკაცრი წოლითი რეჟიმი', fb: 'ხანგრძლივი წოლითი რეჟიმი სარგებელს არ იძლევა და თრომბოემბოლიის რისკს ზრდის.' },
+        { t: 'რუტინული ფიქსაცია (სპონდილოდეზი) რეციდივის პრევენციისთვის', fb: 'ცალკეული თიაქრის დროს ფიქსაცია ნაჩვენები არ არის.' },
+      ] },
+  ],
+  refs: [['StatPearls: Lumbar Disc Herniation', 'https://www.ncbi.nlm.nih.gov/books/?term=StatPearls+lumbar+disc+herniation'], ['StatPearls: Microdiscectomy', 'https://www.ncbi.nlm.nih.gov/books/?term=StatPearls+microdiscectomy'], ['NASS guideline: lumbar disc herniation with radiculopathy', 'https://pubmed.ncbi.nlm.nih.gov/?term=NASS+evidence-based+clinical+guideline+lumbar+disc+herniation+radiculopathy']],
+},
+{
+  id: 'nerve', ka: 'პერიფერიული ნერვის აღდგენა (ნევრორაფია)', en: 'Median nerve repair — epineural neurorrhaphy', kind: 'ეტაპობრივი ოპერაცია (მიკროქირურგია)', scene: 'nerve',
+  case: '28 წლის მამაკაცი, შუშით მიღებული ჭრილობა მაჯის წინა ზედაპირზე, 3 საათის წინ. I–III თითის ხელისგულის ზედაპირზე ანესთეზიაა, ცერის ოპოზიცია შეუძლებელია. ჭრილობა სუფთა და ბასრია.',
+  steps: [
+    { type: 'choice', t: 'ტაქტიკა', q: 'სავარაუდოა მედიანური ნერვის სრული გაწყვეტა. როგორ მოიქცევით?',
+      opts: [
+        { t: 'ქირურგიული რევიზია და პირველადი ნევრორაფია (სუფთა, ბასრი ჭრილობა: ოპტიმალურად ≤ 72 სთ)', ok: 1, fb: 'სწორია. ბასრი ჭრილობით სრული გაწყვეტა ნეიროტმეზისია (Seddon), Sunderland-ის მიხედვით V ხარისხი, და სპონტანურად არ აღდგება. ადრეული პირველადი, დაჭიმულობის გარეშე აღდგენა საუკეთესო შედეგს იძლევა.' },
+        { t: '3 თვე დაკვირვება სპონტანური აღდგენის მოლოდინში', fb: 'დაკვირვება გამართლებულია დახურული ან ბლაგვი დაზიანებისას (ნეიროპრაქსია ან აქსონოტმეზისი). ბასრი გაწყვეტა თავისით არ აღდგება.' },
+        { t: 'მაშინვე ნერვის ტრანსპლანტატი (n. suralis)', fb: 'ტრანსპლანტატი საჭიროა მაშინ, როცა დეფექტის გამო ბოლოების დაჭიმულობის გარეშე შეერთება შეუძლებელია. სუფთა ჭრილობისას ჯერ პირდაპირი ნევრორაფია უნდა სცადოთ.' },
+      ] },
+    { type: 'tool', t: 'ბოლოების დებრიდმენტი', q: 'მიკროსკოპის ქვეშ ორივე ბოლო დაზიანებული და გაფანჩული ჩანს. აირჩიეთ ინსტრუმენტი და დააჭირეთ ჯერ ერთ, მერე მეორე ბოლოს, ჯანსაღ ფასციკულებამდე მოსაჭრელად.',
+      tools: [['scissors', 'მიკრომაკრატელი'], ['scalpel', 'სკალპელი'], ['bip', 'ბიპოლარული კოაგულაცია'], ['suture', 'ნეილონი 9-0']], ok: ['scissors'],
+      toolFb: { scalpel: 'შესაძლებელია ახალი ბასრი სამართებლით ჭრაც, მაგრამ აქ მიკრომაკრატელია არჩეული. მთავარია ნერვის ბოლოს გასწორებული, ჯანსაღი ფასციკულები.', bip: 'ფასციკულების კოაგულაცია მათ აზიანებს. ჰემოსტაზისთვის მხოლოდ ეპინევრიუმის სისხლძარღვები კოაგულირდება, ზომიერად.', suture: 'კერვამდე ბოლოები უნდა მომზადდეს.' },
+      nerveTarget: ['endP', 'endD'], miss: 'დააჭირეთ ნერვის მოჭრილ ბოლოს (გაფანჩული რგოლი).',
+      okFb: 'ორივე ბოლო ჯანსაღ ფასციკულებამდეა მოჭრილი. დიასტაზი ოდნავ გაიზარდა, მაგრამ ბოლოები ჯერ კიდევ დაჭიმულობის გარეშე უახლოვდება ერთმანეთს.' },
+    { type: 'slider', t: 'ფასციკულური ორიენტაცია', q: 'დისტალური ბოლო 60°-ზე მეტით არის შემობრუნებული. დაატრიალეთ ის, სანამ ფასციკულების ნიმუში და ეპინევრიუმის სისხლძარღვი (წითელი ხაზი) პროქსიმალურს არ დაემთხვევა.',
+      tol: 8, okFb: 'ორიენტაცია სწორია. ზუსტი ფასციკულური შესაბამისობა ამცირებს მოტორული და სენსორული აქსონების „არასწორ" მიმართულებით ზრდას (მისდირექციას).' },
+    { type: 'tool', t: 'ეპინევრული ნაკერები', q: 'აირჩიეთ ძაფი და დაადეთ 4 ეპინევრული ნაკერი მონიშნულ წერტილებზე (ცისფერი).',
+      tools: [['suture', 'ნეილონი 9-0'], ['silk', 'აბრეშუმი 4-0'], ['glue', 'ფიბრინის წებო'], ['scissors', 'მიკრომაკრატელი']], ok: ['suture'],
+      toolFb: { silk: 'სქელი, რეაქტიული ძაფი ანთებას და ფიბროზს იწვევს. ნერვისთვის 8-0–10-0 ნეილონი გამოიყენება.', glue: 'ფიბრინის წებო შეიძლება დამხმარედ, მაგრამ ამ სცენარში ეპინევრული ნაკერები ტარდება.', scissors: 'ბოლოები უკვე მომზადებულია.' },
+      nerveTarget: ['sut0', 'sut1', 'sut2', 'sut3', 'sut4', 'sut5'], need: 4, miss: 'დააჭირეთ ცისფერ წერტილებს ნერვის გარშემოწერილობაზე.',
+      okFb: 'ბოლოები დაჭიმულობის გარეშეა შეერთებული. ფასციკულები ერთმანეთს ემთხვევა და ეპინევრიუმი დახურულია.' },
+    { type: 'choice', t: 'რეგენერაცია', q: 'რა სიჩქარით ელით აქსონების რეგენერაციას ზრდასრულში?', anim: 'regrow',
+      opts: [
+        { t: '≈ 1 მმ დღეში (≈ 2,5 სმ თვეში)', ok: 1, fb: 'სწორია. ტინელის ნიშანი თანდათან დისტალურად ინაცვლებს. დაზიანებიდან ტენარის კუნთებამდე რამდენიმე სანტიმეტრია, ამიტომ მოტორული აღდგენა თვეებს მოითხოვს. სენსორული ხელახალი სწავლება (re-education) აუცილებელია.' },
+        { t: '≈ 1 სმ დღეში', fb: 'ზედმეტად სწრაფია. ზრდასრულის პერიფერიული აქსონი ≈ 1 მმ-ს იზრდება დღეში.' },
+        { t: 'რეგენერაცია არ ხდება', fb: 'პერიფერიული ნერვი (შვანის უჯრედები, ბიუნგნერის ზოლები) რეგენერაციის უნარს ინარჩუნებს, ცნს-ისგან განსხვავებით.' },
+      ] },
+    { type: 'choice', t: 'ოპერაციის შემდეგ', q: 'ოპერაციის შემდგომი იმობილიზაცია:', anim: 'regrow',
+      opts: [
+        { t: 'დამცავი ლანგეტი ≈ 3 კვირა, მაჯა მცირე ფლექსიაში (ნაკერზე დაჭიმულობის თავიდან ასაცილებლად); შემდეგ თანდათანობითი მოძრაობა და ჰელთერაპია', ok: 1, fb: 'სწორია. რეაბილიტაცია მოიცავს თითების და მაჯის მოძრაობას, სენსორულ ხელახალ სწავლებას და, საჭიროებისამებრ, ოპონენსპლასტიკას, თუ მოტორული აღდგენა არასაკმარისია.' },
+        { t: 'იმობილიზაცია არ არის საჭირო, მაშინვე სრული დატვირთვა', fb: 'ადრეული დაჭიმულობა ნაკერს გახსნის ან დიასტაზს წარმოქმნის.' },
+        { t: '3 თვე მკაცრი იმობილიზაცია', fb: 'ხანგრძლივი იმობილიზაცია სახსრის სიხისტეს და მყესების შეხორცებას იწვევს.' },
+      ] },
+  ],
+  refs: [['StatPearls: Peripheral Nerve Injury', 'https://www.ncbi.nlm.nih.gov/books/?term=StatPearls+peripheral+nerve+injury'], ['StatPearls: Median Nerve Injury', 'https://www.ncbi.nlm.nih.gov/books/?term=StatPearls+median+nerve+injury'], ['Seddon & Sunderland classification (review)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Seddon+Sunderland+classification+nerve+injury+review']],
+},
+];
 
 </script>
 <script>
@@ -1180,6 +1406,7 @@ const CAMS = {
   lumbar: [[0.01, 0.97, -0.06], [0.2, 1.05, -0.42]], plexus: [[0.1, 1.38, -0.02], [0.25, 1.45, 0.62]], armL: [[0.22, 1.05, 0.0], [0.5, 1.12, 0.78]],
   handL: [[0.25, 0.9, 0.02], [0.45, 1.04, 0.46]], elbowL: [[0.2, 1.13, -0.03], [0.3, 1.2, -0.42]], humerusL: [[0.19, 1.24, -0.03], [0.42, 1.3, -0.5]],
   legL: [[0.1, 0.42, -0.02], [0.7, 0.55, 0.45]], kneeL: [[0.11, 0.43, -0.03], [0.42, 0.5, 0.2]], legBack: [[0.06, 0.62, -0.06], [0.45, 0.8, -1.35]],
+  vessels2: [[0.025, 1.625, 0.0], [0.34, 1.7, 0.22]], lumbarSide: [[0.0, 1.0, -0.035], [0.42, 1.04, -0.08]],
   legs: [[0, 0.5, -0.02], [0.35, 0.65, 1.7]], motor: [[0, 1.2, 0], [0.9, 1.35, 2.2]],
 };
 let tween = null;
@@ -1265,7 +1492,7 @@ let pathoMicro = false;
 function exitPathoMicro() { if (pathoMicro) { MICRO.leave(); pathoMicro = false; ctl.enabled = true; MICRO.ctl.enabled = false; } }
 function applyFx(fx, def) {
   clearFx();
-  $('#attr').hidden = !!fx.micro;
+  $('#attr').hidden = !!fx.micro || mode === 'sim';
   if (fx.micro) { pathoMicro = true; ctl.enabled = false; MICRO.ctl.enabled = true; eppT = 0; MICRO.enterPatho(fx.micro); return; }
   exitPathoMicro();
   const show = fx.show || def.show; const op = Object.assign({}, def.op || {}, fx.op || {});
@@ -1274,6 +1501,8 @@ function applyFx(fx, def) {
   hl(fx.hl); grey(fx.grey); scaleAbout(fx.atrophy, .85); scaleAbout(fx.swell, 1.2); lesion(fx.lesion);
   (fx.flow || []).forEach(addFlow); if (fx.plaques) addPlaques(fx.plaques); if (fx.wave) addWave(fx.wave);
   if (fx.spread) spread = Object.assign({ t0: performance.now(), last: 0 }, fx.spread);
+  for (const mv of fx.move || []) { const r = re(mv.m); for (const m of ALL) if (r.test(m.userData.lname)) m.position.set(...mv.d); }
+  if (fx.cut) { const c = new THREE.LineCurve3(V3(...fx.cut[0]), V3(...fx.cut[1])); const t = new THREE.Mesh(new THREE.TubeGeometry(c, 8, .0018, 8, false), new THREE.MeshBasicMaterial({ color: COL.red, depthTest: false })); t.renderOrder = 21; fxRoot.add(t); }
   if (fx.cam) goCam(fx.cam);
   if (selected) markSelected(selected, false), selected = null;
 }
@@ -1352,6 +1581,7 @@ const PATHO_LEGEND = [['დაზიანების კერა / დაზ�
 
 function renderLeft() {
   const L = $('#leftBody');
+  if (mode === 'sim') return renderSimLeft(L);
   if (mode === 'micro') {
     $('#leftTitle').textContent = 'ნეირონი · უჯრედული დონე';
     L.innerHTML = '<div class="vlist">' + MICRO.steps.map((v, i) => `<button class="vitem" type="button" data-mi="${i}" aria-current="${i === curMicro}"><span class="dot">${i + 1}</span><span><b>${esc(v.t)}</b><small>${esc(v.sub)}</small></span></button>`).join('') + '</div>';
@@ -1379,6 +1609,7 @@ function layerOn(k) { const v = curView; if (layers[k] != null) return layers[k]
 
 function renderRight() {
   const B = $('#rightBody');
+  if (mode === 'sim') return renderSimRight(B);
   if (mode === 'micro') {
     const s = MICRO.steps[curMicro], n = MICRO.steps.length, chart = /rest|ap|salt/.test(s.id);
     B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>უჯრედული დონე</span><span>·</span><span>ეტაპი ${curMicro + 1}/${n}</span></div><h1>${esc(s.t)}</h1><div class="en">${esc(s.sub)}</div></div>
@@ -1429,11 +1660,13 @@ function showSelected(m) {
 function setMode(m) {
   if (mode === 'micro' && m !== 'micro') { MICRO.leave(); ctl.enabled = true; }
   if (m !== 'patho') exitPathoMicro();
+  if (m !== 'sim') exitSimMicro();
   mode = m; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
   document.body.dataset.mode = m;
   $('#attr').innerHTML = m === 'micro' ? 'უჯრედული დონე: სქემატური 3D, მასშტაბი პირობითია' : '3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია';
-  tip.hidden = true; $('#attr').hidden = m === 'micro';
+  tip.hidden = true; $('#attr').hidden = m === 'micro' || m === 'sim';
   if (m === 'micro') { ctl.enabled = false; MICRO.ctl.enabled = true; openMicro(curMicro); }
+  else if (m === 'sim') openSim(curSim || SIMS[0]);
   else if (m === 'norm') showView(curView); else { if (curNoso) openNoso(curNoso, curStep); else { renderLeft(); renderRight(); setLegend(PATHO_LEGEND); clearFx(); baseState(['cortex', 'cerebellum', 'stem', 'cord', 'cranial', 'spinal', 'legs', 'bone', 'skin'], { bone: .15 }); goCam('body'); } }
   try { localStorage.setItem('na-mode', m); } catch (e) {}
 }
@@ -1494,7 +1727,7 @@ addEventListener('keydown', e => { if (mode === 'micro' && !/INPUT/.test(documen
 
 const ray = new THREE.Raycaster(), mv = new THREE.Vector2();
 function pick(ev) {
-  if (mode === 'micro' || pathoMicro) return null;
+  if (mode === 'micro' || pathoMicro || mode === 'sim') return null;
   const r = R.domElement.getBoundingClientRect(); mv.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
   ray.setFromCamera(mv, cam);
   const cands = ALL.filter(m => m.visible && m.material !== skinMat && m.material.opacity > .2);
@@ -1505,6 +1738,7 @@ function markSelected(m, on) { if (!m || m.material === skinMat) return; m.mater
 let down = null;
 R.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
 R.domElement.addEventListener('pointerup', e => {
+  if (mode === 'sim') { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) <= 5) simClick(e); return; }
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
   const m = pick(e); if (selected) markSelected(selected, false); selected = m; if (m) { markSelected(m, true); showSelected(m); }
 });
@@ -1522,7 +1756,7 @@ const clock = new THREE.Clock(); const tmp = new THREE.Color();
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), .05), now = performance.now(), T = now / 1000;
-  if (mode === 'micro' || pathoMicro) { const v = MICRO.update(dt); if (typeof v === 'number') drawVm(v); else if (v && v.epp) drawEpp(v); R.render(MICRO.scene, MICRO.cam); return; }
+  if (mode === 'micro' || pathoMicro || simMicro) { const v = MICRO.update(dt); if (typeof v === 'number') drawVm(v); else if (v && v.epp) drawEpp(v); R.render(MICRO.scene, MICRO.cam); return; }
   if (tween) { tween.t = Math.min(1, tween.t + dt / .9); const k = 1 - Math.pow(1 - tween.t, 3);
     ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
   ctl.update();
@@ -1545,6 +1779,84 @@ function frame() {
   R.render(scene, cam);
 }
 
+
+// ---------------------------------------------------------------- ჩარევა (interactive simulations)
+let curSim = null, simStep = 0, simTool = null, simDone = false, simErr = 0, simPenalty = 0, simClock = 0, simFb = null, simMulti = new Set(), simMicro = false, simChosen = {};
+function exitSimMicro() { if (simMicro) { MICRO.leave(); simMicro = false; ctl.enabled = true; MICRO.ctl.enabled = false; } }
+function openSim(s) {
+  curSim = s; simStep = 0; simErr = 0; simPenalty = 0; simClock = s.clock || 0;
+  if (s.scene === 'nerve') { clearFx(); simMicro = true; ctl.enabled = false; MICRO.ctl.enabled = true; MICRO.enterNerve(); setLegend([]); }
+  else { exitSimMicro(); setLegend(PATHO_LEGEND); }
+  enterSimStep(); if (isPhone()) setCollapsed('#left', true);
+}
+function enterSimStep() {
+  const s = curSim, st = s.steps[simStep]; simTool = null; simDone = false; simFb = null; simMulti = new Set(); simChosen = {};
+  if (st) {
+    if (s.scene === 'nerve') { MICRO.nerve.showSutures(st.type === 'tool' && (st.nerveTarget || []).some(x => /^sut/.test(x))); if (st.anim === 'regrow') MICRO.nerve.regrow(true); }
+    else if (st.fx) applyFx(st.fx, s);
+  }
+  renderLeft(); renderRight();
+}
+function simSuccess(fb) { const st = curSim.steps[simStep]; simDone = true; simFb = { ok: 1, t: fb || st.okFb }; simClock += st.min || 0; if (st.done && curSim.scene !== 'nerve') applyFx(st.done, curSim); renderRight(); }
+function simWrong(t, pen = 0) { simErr++; simPenalty += pen; simClock += pen; simFb = { ok: 0, t }; renderRight(); }
+function simClick(ev) {
+  const st = curSim && curSim.steps[simStep]; if (!st || st.type !== 'tool' || simDone) return;
+  if (!simTool) { simFb = { ok: null, t: 'ჯერ აირჩიეთ ინსტრუმენტი ბარათში.' }; renderRight(); return; }
+  if (curSim.scene === 'nerve') {
+    const id = MICRO.pickNerve(ev, R.domElement.getBoundingClientRect()); if (!id) return;
+    if (!st.nerveTarget.includes(id)) { simWrong(st.miss); return; }
+    if (/^end/.test(id)) { MICRO.nerve.debride(id); simMulti.add(id); if (simMulti.size >= (st.need || st.nerveTarget.length)) simSuccess(); else { simFb = { ok: null, t: (id === 'endP' ? 'პროქსიმალური' : 'დისტალური') + ' ბოლო მომზადებულია. ახლა მეორე ბოლო.' }; renderRight(); } }
+    else { const n = MICRO.nerve.suture(id); if (n >= (st.need || 4)) { MICRO.nerve.showSutures(false); simSuccess(); } else { simFb = { ok: null, t: `ნაკერი ${n}/${st.need || 4}` }; renderRight(); } }
+    return;
+  }
+  const r = R.domElement.getBoundingClientRect(); mv.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(mv, cam);
+  const cands = ALL.filter(m => m.visible && m.material !== skinMat && (m.material.opacity == null || m.material.opacity > .05)).concat(fxRoot.children.filter(o => o.isMesh));
+  const hits = ray.intersectObjects(cands, false); if (!hits.length) return;
+  // the clicked ray may pass through translucent tissue first: accept if any hit along it reaches the target
+  const near = (h, t) => h.point.distanceTo(anchor(t.at)) < t.r || (t.mesh && h.object.userData && re(t.mesh).test(h.object.userData.lname || ''));
+  if (hits.some(h => near(h, st.target))) { simSuccess(); return; }
+  for (const a of st.alt || []) if (hits.slice(0, 3).some(h => near(h, a))) { simWrong(a.fb, 10); return; }
+  simWrong(st.miss);
+}
+function renderSimLeft(L) {
+  $('#leftTitle').textContent = 'ჩარევა · მოდელირებები';
+  L.innerHTML = '<div class="vlist">' + SIMS.map(s => `<button class="vitem" type="button" data-sim="${s.id}" aria-current="${s === curSim}"><span class="dot">${s.scene === 'nerve' ? '✂' : s.id === 'stroke' ? '⏱' : '⚕'}</span><span><b>${esc(s.ka)}</b><small>${esc(s.kind)}</small></span></button>`).join('') + '</div>' +
+    '<div class="layers" style="display:block"><h3>შემდეგ ეტაპზე</h3>' + SIM_SOON.map(([t, s]) => `<div class="vitem" style="opacity:.5;cursor:default"><span class="dot">·</span><span><b>${esc(t)}</b><small>${esc(s)}</small></span></div>`).join('') + '</div>';
+}
+function renderSimRight(B) {
+  const s = curSim, n = s.steps.length, st = s.steps[simStep];
+  const clock = s.clock != null ? `<span class="icd">⏱ ${simClock} წთ სიმპტომიდან</span>` : '';
+  const dots = `<div class="steps">${s.steps.map((x, i) => `<button type="button" disabled aria-current="${i === simStep}" class="${i < simStep ? 'done' : ''}" title="${esc(x.t)}">${i + 1}</button>`).join('')}</div>`;
+  let body = '';
+  if (!st) {
+    const neur = s.clock != null && simPenalty ? `<p>შეცდომებით დაკარგული დრო: <b>${simPenalty} წთ</b>. ეს დაახლოებით <b>${(simPenalty * 1.9).toFixed(0)} მილიონი ნეირონია</b>, თუ ჩავთვლით, რომ ≈ 1,9 მლნ ნეირონი იღუპება ყოველ წუთში (Saver, Stroke 2006).</p>` : '';
+    body = `<div class="sec"><h3>შედეგი</h3><div class="stepbox"><h4>${simErr ? 'მოდელირება დასრულდა' : 'უშეცდომოდ დასრულდა'}</h4><p>შეცდომები: <b>${simErr}</b>${s.clock != null ? ` · დრო სიმპტომიდან რეპერფუზიამდე და მართვის ბოლომდე: <b>${simClock} წთ</b>` : ''}</p>${neur}</div>
+      <div class="stepnav"><button class="btn primary" type="button" id="simRestart">თავიდან ↺</button></div></div>
+      <div class="sec refs"><h3>წყაროები</h3><ul>${s.refs.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('')}</ul></div>`;
+  } else {
+    let act = '';
+    const order = st.opts ? st.opts.map((_, i) => i).sort((a, b) => ((a * 7 + simStep * 3 + 5) % 11) - ((b * 7 + simStep * 3 + 5) % 11)) : [];
+    if (st.type === 'choice') act = `<div class="opts">${order.map(i => [st.opts[i], i]).map(([o, i]) => `<button type="button" class="opt ${simChosen[i] ? (o.ok ? 'good' : 'bad') : ''}" data-opt="${i}" ${simDone ? 'disabled' : ''}>${esc(o.t)}</button>`).join('')}</div>`;
+    if (st.type === 'tool') act = `<h3 style="margin:10px 0 6px">ინსტრუმენტები</h3><div style="display:flex;flex-wrap:wrap;gap:6px">${st.tools.map(([id, t]) => `<button type="button" class="chip" data-tool="${id}" aria-pressed="${simTool === id}" ${simDone ? 'disabled' : ''}>${esc(t)}</button>`).join('')}</div>`;
+    if (st.type === 'slider') { const v = Math.round(MICRO.nerve.getRot()); act = `<label for="rotS" style="display:block;margin:10px 0 4px;color:var(--ink2);font-size:12.5px">დისტალური ბოლოს ბრუნვა: <b id="rotV" style="font-family:var(--mono)">${v}°</b></label><input id="rotS" type="range" min="-90" max="90" step="1" value="${v}" style="width:100%" ${simDone ? 'disabled' : ''}>`; }
+    const fb = simFb ? `<div class="fb ${simFb.ok === 1 ? 'good' : simFb.ok === 0 ? 'bad' : ''}">${esc(simFb.t)}</div>` : '';
+    body = `<div class="sec">${dots}<div class="stepbox"><h4>${simStep + 1}. ${esc(st.t)}</h4><p>${esc(st.q)}</p>${st.fx && st.fx.note ? `<p class="note">${esc(st.fx.note)}</p>` : ''}${act}${fb}</div>
+      <div class="stepnav"><button class="btn primary" type="button" id="simNext" ${simDone ? '' : 'disabled'}>${simStep < n - 1 ? 'შემდეგი ეტაპი →' : 'შედეგის ნახვა →'}</button><button class="btn" type="button" id="simRestart">თავიდან</button></div></div>`;
+  }
+  B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>ჩარევა</span><span>·</span><span>${esc(s.kind)}</span>${clock}</div><h1>${esc(s.ka)}</h1><div class="en">${esc(s.en)}</div></div>
+    <div class="sec"><details ${simStep === 0 ? 'open' : ''}><summary style="cursor:pointer;color:var(--muted);font:600 11px var(--sans);letter-spacing:.9px;text-transform:uppercase">შემთხვევა</summary><p style="margin-top:8px">${esc(s.case)}</p></details></div>${body}
+    <p class="disc">სასწავლო მოდელირება; არ ცვლის კლინიკურ გაიდლაინებს და ქირურგიულ სწავლებას. გადაწყვეტილებები ეყრდნობა მითითებულ გაიდლაინებს/მიმოხილვებს.</p>`;
+  const rs = document.getElementById('rotS'); if (rs) rs.oninput = () => { const v = +rs.value; MICRO.nerve.setRot(v); document.getElementById('rotV').textContent = v + '°'; if (Math.abs(v) <= st.tol && !simDone) simSuccess(); };
+}
+$('#rightBody').addEventListener('click', e => {
+  if (mode !== 'sim') return; const st = curSim.steps[simStep];
+  const o = e.target.closest('[data-opt]'); if (o && !simDone) { const i = +o.dataset.opt, op = st.opts[i]; simChosen[i] = 1; if (op.ok) { simClock += op.min || 0; simSuccess(op.fb); } else simWrong(op.fb, op.min || 0); return; }
+  const t = e.target.closest('[data-tool]'); if (t && !simDone) { const id = t.dataset.tool; if (st.ok.includes(id)) { simTool = id; simFb = { ok: null, t: 'ინსტრუმენტი არჩეულია. ახლა დააჭირეთ მოდელზე სწორ ადგილს.' }; renderRight(); } else { simTool = null; simWrong(st.toolFb[id] || 'ეს ინსტრუმენტი ამ ეტაპზე არ გამოიყენება.'); } return; }
+  if (e.target.id === 'simNext') { simStep++; if (simStep < curSim.steps.length) enterSimStep(); else { if (curSim.scene === 'nerve') MICRO.nerve.regrow(true); renderRight(); } return; }
+  if (e.target.id === 'simRestart') openSim(curSim);
+});
+$('#leftBody').addEventListener('click', e => { const b = e.target.closest('[data-sim]'); if (b) openSim(SIMS.find(s => s.id === b.dataset.sim)); });
+
 // ---------------------------------------------------------------- boot
 (async function boot() {
   try { await loadPack(); } catch (e) { $('#loadMsg').textContent = 'მოდელის ჩატვირთვა ვერ მოხერხდა. განაახლეთ გვერდი.'; console.error(e); return; }
@@ -1554,11 +1866,12 @@ function frame() {
   if (h && NOSOLOGY.find(n => n.id === h)) { mode = 'patho'; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === 'patho')); openNoso(NOSOLOGY.find(n => n.id === h)); }
   else if (h && NORM.find(n => n.id === h)) { showView(NORM.find(n => n.id === h)); }
   else if (h === 'neuron' || h === 'micro') setMode('micro');
+  else if (h === 'sim') setMode('sim');
   else setMode(m0 === 'patho' || m0 === 'micro' ? m0 : 'norm');
   if (isPhone()) { setCollapsed('#left', true); }
   $('#load').classList.add('gone');
   frame();
-  window.__atlas = { openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true };
+  window.__atlas = { simTargetScreen: () => { const st = curSim.steps[simStep]; if (curSim.scene === 'nerve') return (st.nerveTarget || []).map(id => MICRO.nerveScreen(id)).filter(Boolean); const p = anchor(st.target.at).project(cam); return [{ x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight }]; }, openSim: id => openSim(SIMS.find(s => s.id === id)), simState: () => ({ simStep, simDone, simErr }), openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true };
 })();
 })();
 </script>

@@ -37,6 +37,17 @@ a{color:var(--myelin)}
 .mode button[aria-pressed="true"]{background:var(--ink);color:#11161c}
 .mode button[data-m="patho"][aria-pressed="true"]{background:var(--lesion);color:#fff}
 .mode button[data-m="micro"][aria-pressed="true"]{background:#8f78d6;color:#fff}
+.mode button[data-m="sim"][aria-pressed="true"]{background:#2f9e8f;color:#fff}
+.opts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.opt{text-align:left;border:1px solid var(--line2);background:rgba(236,230,218,.03);border-radius:9px;padding:9px 11px;cursor:pointer;font-size:13px;line-height:1.4}
+.opt:hover:not(:disabled){border-color:var(--ink2)}
+.opt.good{border-color:var(--green);background:rgba(99,181,125,.12)}
+.opt.bad{border-color:var(--lesion);background:rgba(226,87,76,.10)}
+.opt:disabled{cursor:default}
+.fb{margin-top:10px;border-left:3px solid var(--ink2);padding:8px 10px;background:rgba(0,0,0,.2);border-radius:0 8px 8px 0;font-size:13px}
+.fb.good{border-color:var(--green)}
+.fb.bad{border-color:var(--lesion)}
+.chip:disabled{opacity:.45;cursor:default}
 .top .sp{flex:1}
 .toplinks{display:flex;gap:14px;align-items:center;font-size:12.5px}
 .toplinks a{color:var(--ink2);text-decoration:none;border-bottom:1px solid var(--line2)}
@@ -141,7 +152,7 @@ a{color:var(--myelin)}
   .brand span,.toplinks .hide-s{display:none}
   .brand b{font-size:15px;white-space:nowrap}
   .top .sp{display:none}
-  .mode button{padding:5px 9px;font-size:12.5px}
+  .mode button{padding:5px 4px;font-size:12px}
   #left{left:10px;right:10px;top:auto;bottom:calc(var(--rh,42vh) + 16px + env(safe-area-inset-bottom,0px));width:auto;max-height:calc(100vh - var(--rh,42vh) - 150px);max-height:calc(100dvh - var(--rh,42vh) - 150px)}
   #left.col{max-height:none;bottom:calc(var(--rh,42vh) + 16px + env(safe-area-inset-bottom,0px))}
   #right{left:10px;right:10px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;height:42vh;height:42dvh}
@@ -161,6 +172,7 @@ a{color:var(--myelin)}
     <button type="button" data-m="norm" aria-pressed="true">ნორმა</button>
     <button type="button" data-m="micro" aria-pressed="false">ნეირონი</button>
     <button type="button" data-m="patho" aria-pressed="false">პათოლოგია</button>
+    <button type="button" data-m="sim" aria-pressed="false">ჩარევა</button>
   </div>
   <div class="sp"></div>
   <nav class="toplinks">

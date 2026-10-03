@@ -181,6 +181,7 @@ const CAMS = {
   lumbar: [[0.01, 0.97, -0.06], [0.2, 1.05, -0.42]], plexus: [[0.1, 1.38, -0.02], [0.25, 1.45, 0.62]], armL: [[0.22, 1.05, 0.0], [0.5, 1.12, 0.78]],
   handL: [[0.25, 0.9, 0.02], [0.45, 1.04, 0.46]], elbowL: [[0.2, 1.13, -0.03], [0.3, 1.2, -0.42]], humerusL: [[0.19, 1.24, -0.03], [0.42, 1.3, -0.5]],
   legL: [[0.1, 0.42, -0.02], [0.7, 0.55, 0.45]], kneeL: [[0.11, 0.43, -0.03], [0.42, 0.5, 0.2]], legBack: [[0.06, 0.62, -0.06], [0.45, 0.8, -1.35]],
+  vessels2: [[0.025, 1.625, 0.0], [0.34, 1.7, 0.22]], lumbarSide: [[0.0, 1.0, -0.035], [0.42, 1.04, -0.08]],
   legs: [[0, 0.5, -0.02], [0.35, 0.65, 1.7]], motor: [[0, 1.2, 0], [0.9, 1.35, 2.2]],
 };
 let tween = null;
@@ -266,7 +267,7 @@ let pathoMicro = false;
 function exitPathoMicro() { if (pathoMicro) { MICRO.leave(); pathoMicro = false; ctl.enabled = true; MICRO.ctl.enabled = false; } }
 function applyFx(fx, def) {
   clearFx();
-  $('#attr').hidden = !!fx.micro;
+  $('#attr').hidden = !!fx.micro || mode === 'sim';
   if (fx.micro) { pathoMicro = true; ctl.enabled = false; MICRO.ctl.enabled = true; eppT = 0; MICRO.enterPatho(fx.micro); return; }
   exitPathoMicro();
   const show = fx.show || def.show; const op = Object.assign({}, def.op || {}, fx.op || {});
@@ -275,6 +276,8 @@ function applyFx(fx, def) {
   hl(fx.hl); grey(fx.grey); scaleAbout(fx.atrophy, .85); scaleAbout(fx.swell, 1.2); lesion(fx.lesion);
   (fx.flow || []).forEach(addFlow); if (fx.plaques) addPlaques(fx.plaques); if (fx.wave) addWave(fx.wave);
   if (fx.spread) spread = Object.assign({ t0: performance.now(), last: 0 }, fx.spread);
+  for (const mv of fx.move || []) { const r = re(mv.m); for (const m of ALL) if (r.test(m.userData.lname)) m.position.set(...mv.d); }
+  if (fx.cut) { const c = new THREE.LineCurve3(V3(...fx.cut[0]), V3(...fx.cut[1])); const t = new THREE.Mesh(new THREE.TubeGeometry(c, 8, .0018, 8, false), new THREE.MeshBasicMaterial({ color: COL.red, depthTest: false })); t.renderOrder = 21; fxRoot.add(t); }
   if (fx.cam) goCam(fx.cam);
   if (selected) markSelected(selected, false), selected = null;
 }
@@ -353,6 +356,7 @@ const PATHO_LEGEND = [['დაზიანების კერა / დაზ�
 
 function renderLeft() {
   const L = $('#leftBody');
+  if (mode === 'sim') return renderSimLeft(L);
   if (mode === 'micro') {
     $('#leftTitle').textContent = 'ნეირონი · უჯრედული დონე';
     L.innerHTML = '<div class="vlist">' + MICRO.steps.map((v, i) => `<button class="vitem" type="button" data-mi="${i}" aria-current="${i === curMicro}"><span class="dot">${i + 1}</span><span><b>${esc(v.t)}</b><small>${esc(v.sub)}</small></span></button>`).join('') + '</div>';
@@ -380,6 +384,7 @@ function layerOn(k) { const v = curView; if (layers[k] != null) return layers[k]
 
 function renderRight() {
   const B = $('#rightBody');
+  if (mode === 'sim') return renderSimRight(B);
   if (mode === 'micro') {
     const s = MICRO.steps[curMicro], n = MICRO.steps.length, chart = /rest|ap|salt/.test(s.id);
     B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>უჯრედული დონე</span><span>·</span><span>ეტაპი ${curMicro + 1}/${n}</span></div><h1>${esc(s.t)}</h1><div class="en">${esc(s.sub)}</div></div>
@@ -430,11 +435,13 @@ function showSelected(m) {
 function setMode(m) {
   if (mode === 'micro' && m !== 'micro') { MICRO.leave(); ctl.enabled = true; }
   if (m !== 'patho') exitPathoMicro();
+  if (m !== 'sim') exitSimMicro();
   mode = m; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
   document.body.dataset.mode = m;
   $('#attr').innerHTML = m === 'micro' ? 'უჯრედული დონე: სქემატური 3D, მასშტაბი პირობითია' : '3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია';
-  tip.hidden = true; $('#attr').hidden = m === 'micro';
+  tip.hidden = true; $('#attr').hidden = m === 'micro' || m === 'sim';
   if (m === 'micro') { ctl.enabled = false; MICRO.ctl.enabled = true; openMicro(curMicro); }
+  else if (m === 'sim') openSim(curSim || SIMS[0]);
   else if (m === 'norm') showView(curView); else { if (curNoso) openNoso(curNoso, curStep); else { renderLeft(); renderRight(); setLegend(PATHO_LEGEND); clearFx(); baseState(['cortex', 'cerebellum', 'stem', 'cord', 'cranial', 'spinal', 'legs', 'bone', 'skin'], { bone: .15 }); goCam('body'); } }
   try { localStorage.setItem('na-mode', m); } catch (e) {}
 }
@@ -495,7 +502,7 @@ addEventListener('keydown', e => { if (mode === 'micro' && !/INPUT/.test(documen
 
 const ray = new THREE.Raycaster(), mv = new THREE.Vector2();
 function pick(ev) {
-  if (mode === 'micro' || pathoMicro) return null;
+  if (mode === 'micro' || pathoMicro || mode === 'sim') return null;
   const r = R.domElement.getBoundingClientRect(); mv.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
   ray.setFromCamera(mv, cam);
   const cands = ALL.filter(m => m.visible && m.material !== skinMat && m.material.opacity > .2);
@@ -506,6 +513,7 @@ function markSelected(m, on) { if (!m || m.material === skinMat) return; m.mater
 let down = null;
 R.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
 R.domElement.addEventListener('pointerup', e => {
+  if (mode === 'sim') { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) <= 5) simClick(e); return; }
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
   const m = pick(e); if (selected) markSelected(selected, false); selected = m; if (m) { markSelected(m, true); showSelected(m); }
 });
@@ -523,7 +531,7 @@ const clock = new THREE.Clock(); const tmp = new THREE.Color();
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), .05), now = performance.now(), T = now / 1000;
-  if (mode === 'micro' || pathoMicro) { const v = MICRO.update(dt); if (typeof v === 'number') drawVm(v); else if (v && v.epp) drawEpp(v); R.render(MICRO.scene, MICRO.cam); return; }
+  if (mode === 'micro' || pathoMicro || simMicro) { const v = MICRO.update(dt); if (typeof v === 'number') drawVm(v); else if (v && v.epp) drawEpp(v); R.render(MICRO.scene, MICRO.cam); return; }
   if (tween) { tween.t = Math.min(1, tween.t + dt / .9); const k = 1 - Math.pow(1 - tween.t, 3);
     ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
   ctl.update();
@@ -546,6 +554,84 @@ function frame() {
   R.render(scene, cam);
 }
 
+
+// ---------------------------------------------------------------- ჩარევა (interactive simulations)
+let curSim = null, simStep = 0, simTool = null, simDone = false, simErr = 0, simPenalty = 0, simClock = 0, simFb = null, simMulti = new Set(), simMicro = false, simChosen = {};
+function exitSimMicro() { if (simMicro) { MICRO.leave(); simMicro = false; ctl.enabled = true; MICRO.ctl.enabled = false; } }
+function openSim(s) {
+  curSim = s; simStep = 0; simErr = 0; simPenalty = 0; simClock = s.clock || 0;
+  if (s.scene === 'nerve') { clearFx(); simMicro = true; ctl.enabled = false; MICRO.ctl.enabled = true; MICRO.enterNerve(); setLegend([]); }
+  else { exitSimMicro(); setLegend(PATHO_LEGEND); }
+  enterSimStep(); if (isPhone()) setCollapsed('#left', true);
+}
+function enterSimStep() {
+  const s = curSim, st = s.steps[simStep]; simTool = null; simDone = false; simFb = null; simMulti = new Set(); simChosen = {};
+  if (st) {
+    if (s.scene === 'nerve') { MICRO.nerve.showSutures(st.type === 'tool' && (st.nerveTarget || []).some(x => /^sut/.test(x))); if (st.anim === 'regrow') MICRO.nerve.regrow(true); }
+    else if (st.fx) applyFx(st.fx, s);
+  }
+  renderLeft(); renderRight();
+}
+function simSuccess(fb) { const st = curSim.steps[simStep]; simDone = true; simFb = { ok: 1, t: fb || st.okFb }; simClock += st.min || 0; if (st.done && curSim.scene !== 'nerve') applyFx(st.done, curSim); renderRight(); }
+function simWrong(t, pen = 0) { simErr++; simPenalty += pen; simClock += pen; simFb = { ok: 0, t }; renderRight(); }
+function simClick(ev) {
+  const st = curSim && curSim.steps[simStep]; if (!st || st.type !== 'tool' || simDone) return;
+  if (!simTool) { simFb = { ok: null, t: 'ჯერ აირჩიეთ ინსტრუმენტი ბარათში.' }; renderRight(); return; }
+  if (curSim.scene === 'nerve') {
+    const id = MICRO.pickNerve(ev, R.domElement.getBoundingClientRect()); if (!id) return;
+    if (!st.nerveTarget.includes(id)) { simWrong(st.miss); return; }
+    if (/^end/.test(id)) { MICRO.nerve.debride(id); simMulti.add(id); if (simMulti.size >= (st.need || st.nerveTarget.length)) simSuccess(); else { simFb = { ok: null, t: (id === 'endP' ? 'პროქსიმალური' : 'დისტალური') + ' ბოლო მომზადებულია. ახლა მეორე ბოლო.' }; renderRight(); } }
+    else { const n = MICRO.nerve.suture(id); if (n >= (st.need || 4)) { MICRO.nerve.showSutures(false); simSuccess(); } else { simFb = { ok: null, t: `ნაკერი ${n}/${st.need || 4}` }; renderRight(); } }
+    return;
+  }
+  const r = R.domElement.getBoundingClientRect(); mv.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(mv, cam);
+  const cands = ALL.filter(m => m.visible && m.material !== skinMat && (m.material.opacity == null || m.material.opacity > .05)).concat(fxRoot.children.filter(o => o.isMesh));
+  const hits = ray.intersectObjects(cands, false); if (!hits.length) return;
+  // the clicked ray may pass through translucent tissue first: accept if any hit along it reaches the target
+  const near = (h, t) => h.point.distanceTo(anchor(t.at)) < t.r || (t.mesh && h.object.userData && re(t.mesh).test(h.object.userData.lname || ''));
+  if (hits.some(h => near(h, st.target))) { simSuccess(); return; }
+  for (const a of st.alt || []) if (hits.slice(0, 3).some(h => near(h, a))) { simWrong(a.fb, 10); return; }
+  simWrong(st.miss);
+}
+function renderSimLeft(L) {
+  $('#leftTitle').textContent = 'ჩარევა · მოდელირებები';
+  L.innerHTML = '<div class="vlist">' + SIMS.map(s => `<button class="vitem" type="button" data-sim="${s.id}" aria-current="${s === curSim}"><span class="dot">${s.scene === 'nerve' ? '✂' : s.id === 'stroke' ? '⏱' : '⚕'}</span><span><b>${esc(s.ka)}</b><small>${esc(s.kind)}</small></span></button>`).join('') + '</div>' +
+    '<div class="layers" style="display:block"><h3>შემდეგ ეტაპზე</h3>' + SIM_SOON.map(([t, s]) => `<div class="vitem" style="opacity:.5;cursor:default"><span class="dot">·</span><span><b>${esc(t)}</b><small>${esc(s)}</small></span></div>`).join('') + '</div>';
+}
+function renderSimRight(B) {
+  const s = curSim, n = s.steps.length, st = s.steps[simStep];
+  const clock = s.clock != null ? `<span class="icd">⏱ ${simClock} წთ სიმპტომიდან</span>` : '';
+  const dots = `<div class="steps">${s.steps.map((x, i) => `<button type="button" disabled aria-current="${i === simStep}" class="${i < simStep ? 'done' : ''}" title="${esc(x.t)}">${i + 1}</button>`).join('')}</div>`;
+  let body = '';
+  if (!st) {
+    const neur = s.clock != null && simPenalty ? `<p>შეცდომებით დაკარგული დრო: <b>${simPenalty} წთ</b>. ეს დაახლოებით <b>${(simPenalty * 1.9).toFixed(0)} მილიონი ნეირონია</b>, თუ ჩავთვლით, რომ ≈ 1,9 მლნ ნეირონი იღუპება ყოველ წუთში (Saver, Stroke 2006).</p>` : '';
+    body = `<div class="sec"><h3>შედეგი</h3><div class="stepbox"><h4>${simErr ? 'მოდელირება დასრულდა' : 'უშეცდომოდ დასრულდა'}</h4><p>შეცდომები: <b>${simErr}</b>${s.clock != null ? ` · დრო სიმპტომიდან რეპერფუზიამდე და მართვის ბოლომდე: <b>${simClock} წთ</b>` : ''}</p>${neur}</div>
+      <div class="stepnav"><button class="btn primary" type="button" id="simRestart">თავიდან ↺</button></div></div>
+      <div class="sec refs"><h3>წყაროები</h3><ul>${s.refs.map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('')}</ul></div>`;
+  } else {
+    let act = '';
+    const order = st.opts ? st.opts.map((_, i) => i).sort((a, b) => ((a * 7 + simStep * 3 + 5) % 11) - ((b * 7 + simStep * 3 + 5) % 11)) : [];
+    if (st.type === 'choice') act = `<div class="opts">${order.map(i => [st.opts[i], i]).map(([o, i]) => `<button type="button" class="opt ${simChosen[i] ? (o.ok ? 'good' : 'bad') : ''}" data-opt="${i}" ${simDone ? 'disabled' : ''}>${esc(o.t)}</button>`).join('')}</div>`;
+    if (st.type === 'tool') act = `<h3 style="margin:10px 0 6px">ინსტრუმენტები</h3><div style="display:flex;flex-wrap:wrap;gap:6px">${st.tools.map(([id, t]) => `<button type="button" class="chip" data-tool="${id}" aria-pressed="${simTool === id}" ${simDone ? 'disabled' : ''}>${esc(t)}</button>`).join('')}</div>`;
+    if (st.type === 'slider') { const v = Math.round(MICRO.nerve.getRot()); act = `<label for="rotS" style="display:block;margin:10px 0 4px;color:var(--ink2);font-size:12.5px">დისტალური ბოლოს ბრუნვა: <b id="rotV" style="font-family:var(--mono)">${v}°</b></label><input id="rotS" type="range" min="-90" max="90" step="1" value="${v}" style="width:100%" ${simDone ? 'disabled' : ''}>`; }
+    const fb = simFb ? `<div class="fb ${simFb.ok === 1 ? 'good' : simFb.ok === 0 ? 'bad' : ''}">${esc(simFb.t)}</div>` : '';
+    body = `<div class="sec">${dots}<div class="stepbox"><h4>${simStep + 1}. ${esc(st.t)}</h4><p>${esc(st.q)}</p>${st.fx && st.fx.note ? `<p class="note">${esc(st.fx.note)}</p>` : ''}${act}${fb}</div>
+      <div class="stepnav"><button class="btn primary" type="button" id="simNext" ${simDone ? '' : 'disabled'}>${simStep < n - 1 ? 'შემდეგი ეტაპი →' : 'შედეგის ნახვა →'}</button><button class="btn" type="button" id="simRestart">თავიდან</button></div></div>`;
+  }
+  B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>ჩარევა</span><span>·</span><span>${esc(s.kind)}</span>${clock}</div><h1>${esc(s.ka)}</h1><div class="en">${esc(s.en)}</div></div>
+    <div class="sec"><details ${simStep === 0 ? 'open' : ''}><summary style="cursor:pointer;color:var(--muted);font:600 11px var(--sans);letter-spacing:.9px;text-transform:uppercase">შემთხვევა</summary><p style="margin-top:8px">${esc(s.case)}</p></details></div>${body}
+    <p class="disc">სასწავლო მოდელირება; არ ცვლის კლინიკურ გაიდლაინებს და ქირურგიულ სწავლებას. გადაწყვეტილებები ეყრდნობა მითითებულ გაიდლაინებს/მიმოხილვებს.</p>`;
+  const rs = document.getElementById('rotS'); if (rs) rs.oninput = () => { const v = +rs.value; MICRO.nerve.setRot(v); document.getElementById('rotV').textContent = v + '°'; if (Math.abs(v) <= st.tol && !simDone) simSuccess(); };
+}
+$('#rightBody').addEventListener('click', e => {
+  if (mode !== 'sim') return; const st = curSim.steps[simStep];
+  const o = e.target.closest('[data-opt]'); if (o && !simDone) { const i = +o.dataset.opt, op = st.opts[i]; simChosen[i] = 1; if (op.ok) { simClock += op.min || 0; simSuccess(op.fb); } else simWrong(op.fb, op.min || 0); return; }
+  const t = e.target.closest('[data-tool]'); if (t && !simDone) { const id = t.dataset.tool; if (st.ok.includes(id)) { simTool = id; simFb = { ok: null, t: 'ინსტრუმენტი არჩეულია. ახლა დააჭირეთ მოდელზე სწორ ადგილს.' }; renderRight(); } else { simTool = null; simWrong(st.toolFb[id] || 'ეს ინსტრუმენტი ამ ეტაპზე არ გამოიყენება.'); } return; }
+  if (e.target.id === 'simNext') { simStep++; if (simStep < curSim.steps.length) enterSimStep(); else { if (curSim.scene === 'nerve') MICRO.nerve.regrow(true); renderRight(); } return; }
+  if (e.target.id === 'simRestart') openSim(curSim);
+});
+$('#leftBody').addEventListener('click', e => { const b = e.target.closest('[data-sim]'); if (b) openSim(SIMS.find(s => s.id === b.dataset.sim)); });
+
 // ---------------------------------------------------------------- boot
 (async function boot() {
   try { await loadPack(); } catch (e) { $('#loadMsg').textContent = 'მოდელის ჩატვირთვა ვერ მოხერხდა. განაახლეთ გვერდი.'; console.error(e); return; }
@@ -555,10 +641,11 @@ function frame() {
   if (h && NOSOLOGY.find(n => n.id === h)) { mode = 'patho'; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === 'patho')); openNoso(NOSOLOGY.find(n => n.id === h)); }
   else if (h && NORM.find(n => n.id === h)) { showView(NORM.find(n => n.id === h)); }
   else if (h === 'neuron' || h === 'micro') setMode('micro');
+  else if (h === 'sim') setMode('sim');
   else setMode(m0 === 'patho' || m0 === 'micro' ? m0 : 'norm');
   if (isPhone()) { setCollapsed('#left', true); }
   $('#load').classList.add('gone');
   frame();
-  window.__atlas = { openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true };
+  window.__atlas = { simTargetScreen: () => { const st = curSim.steps[simStep]; if (curSim.scene === 'nerve') return (st.nerveTarget || []).map(id => MICRO.nerveScreen(id)).filter(Boolean); const p = anchor(st.target.at).project(cam); return [{ x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight }]; }, openSim: id => openSim(SIMS.find(s => s.id === id)), simState: () => ({ simStep, simDone, simErr }), openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true };
 })();
 })();
