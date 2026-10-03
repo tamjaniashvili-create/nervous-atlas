@@ -48,10 +48,20 @@ a{color:var(--myelin)}
 .panel{position:fixed;z-index:4;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
 #left{left:16px;top:74px;bottom:16px;width:268px;display:flex;flex-direction:column;overflow:hidden}
 #right{right:16px;top:74px;bottom:16px;width:372px;display:flex;flex-direction:column;overflow:hidden}
+#left.col{bottom:auto}
+#left.col .scroll{display:none}
+#right.col{bottom:auto;max-height:86px}
+#right.col .scroll{overflow:hidden}
+@media (min-width:761px) and (max-width:1180px){
+  #left{width:232px}
+  #right{width:318px}
+  #attr{display:none}
+  #legend{left:262px;max-width:calc(100vw - 610px)}
+}
 .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 8px}
 .ph h2{margin:0;font:600 12px/1 var(--sans);letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
 .scroll{overflow:auto;padding:0 10px 14px;flex:1;scrollbar-width:thin;scrollbar-color:rgba(236,230,218,.2) transparent}
-.cbtn{display:none;border:0;background:transparent;cursor:pointer;color:var(--ink2);font-size:18px;line-height:1;padding:4px 6px;border-radius:6px}
+.cbtn{display:block;border:0;background:transparent;cursor:pointer;color:var(--ink2);font-size:18px;line-height:1;padding:4px 6px;border-radius:6px}
 
 /* view list (norm) */
 .vlist{display:flex;flex-direction:column;gap:2px}
@@ -134,13 +144,10 @@ a{color:var(--myelin)}
   .brand b{font-size:15px;white-space:nowrap}
   .top .sp{display:none}
   .mode button{padding:5px 9px;font-size:12.5px}
-  #left{left:10px;right:10px;top:auto;bottom:calc(10px + 42vh);width:auto;max-height:36vh}
-  #left.col{max-height:none}
-  #left.col .scroll{display:none}
-  #right{left:10px;right:10px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;height:40vh}
-  #right.col{height:auto}
-  #right.col .scroll{display:none}
-  .cbtn{display:block}
+  #left{left:10px;right:10px;top:auto;bottom:calc(var(--rh,42vh) + 16px + env(safe-area-inset-bottom,0px));width:auto;max-height:calc(100vh - var(--rh,42vh) - 150px);max-height:calc(100dvh - var(--rh,42vh) - 150px)}
+  #left.col{max-height:none;bottom:calc(var(--rh,42vh) + 16px + env(safe-area-inset-bottom,0px))}
+  #right{left:10px;right:10px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;height:42vh;height:42dvh}
+  #right.col{height:auto;max-height:86px;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
   #legend{left:12px;right:12px;bottom:auto;top:calc(84px + env(safe-area-inset-top,0px));max-width:none;font-size:11px}
   #attr{display:none}
   .card-h{padding:12px 14px 8px}.card-h h1{font-size:17px}
@@ -896,7 +903,6 @@ window.createMicro = function (R) {
     scene, cam, ctl, steps: MICRO_STEPS,
     enter(i, instant) { active = true; step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
     leave() { active = false; labelLayer.style.display = 'none'; ctl.enabled = false; },
-    resize(w, h) { cam.aspect = w / h; if (w <= 760) cam.setViewOffset(w, h, 0, Math.round(h * 0.2), w, h); else cam.clearViewOffset(); cam.updateProjectionMatrix(); },
     finish() { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } },
     update(dt) { if (!active) return null; T += dt;
       if (tween) { tween.t = Math.min(1, tween.t + dt / 1.1); const k = 1 - Math.pow(1 - tween.t, 3); ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
@@ -935,10 +941,21 @@ scene.add(cam); cam.add(new THREE.PointLight(0xffffff, 0.22));
 
 let MICRO = null;
 function resize() {
-  const w = innerWidth, h = innerHeight; R.setSize(w, h); cam.aspect = w / h; if (MICRO) MICRO.resize(w, h);
-  if (w <= 760) cam.setViewOffset(w, h, 0, Math.round(h * 0.2), w, h); else cam.clearViewOffset();
-  cam.updateProjectionMatrix();
+  const w = innerWidth, h = innerHeight; R.setSize(w, h); cam.aspect = w / h; if (MICRO) MICRO.cam.aspect = w / h;
+  layout();
 }
+// keep the model centred in the free area between/above the panels (no overlap at any size)
+function layout() {
+  const w = innerWidth, h = innerHeight, Lp = document.getElementById('left'), Rp = document.getElementById('right');
+  if (!Lp || !Rp) return;
+  document.documentElement.style.setProperty('--rh', Math.round(Rp.getBoundingClientRect().height) + 'px');
+  const L = Lp.getBoundingClientRect(), Rt = Rp.getBoundingClientRect();
+  let ox = 0, oy = 0;
+  if (w <= 760) { const lg = document.getElementById('legend').getBoundingClientRect(); const top = Math.max(lg.bottom, 90) + 4, bottom = Math.min(L.top, Rt.top) - 4; oy = Math.round(h / 2 - (top + bottom) / 2); }
+  else { const a = L.right + 8, b = Rt.left - 8; ox = Math.round(w / 2 - (a + b) / 2); oy = Rt.height < 120 && L.height < 120 ? 0 : 0; }
+  for (const c of [cam, MICRO && MICRO.cam]) { if (!c) continue; if (ox || oy) c.setViewOffset(w, h, ox, oy, w, h); else c.clearViewOffset(); c.updateProjectionMatrix(); }
+}
+if (window.ResizeObserver) { const ro = new ResizeObserver(() => layout()); addEventListener('DOMContentLoaded', () => {}); setTimeout(() => { ['left', 'right'].forEach(id => { const el = document.getElementById(id); if (el) ro.observe(el); }); }, 0); }
 MICRO = window.createMicro(R);
 addEventListener('resize', resize); resize();
 
@@ -1368,7 +1385,7 @@ $('#rightBody').addEventListener('click', e => {
   const lk = e.target.closest('[data-link]'); if (lk) { const id = lk.dataset.link, no = NOSOLOGY.find(x => x.id === id), nv = NORM.find(x => x.id === id);
     if (no) { setMode('patho'); openNoso(no, 0); } else if (nv) { setMode('norm'); showView(nv); } }
 });
-function setCollapsed(sel, on) { const el = $(sel); el.classList.toggle('col', on); const b = el.querySelector('.cbtn'); if (b) { b.textContent = on ? '⌃' : '⌄'; b.setAttribute('aria-expanded', !on); } }
+function setCollapsed(sel, on) { const el = $(sel); el.classList.toggle('col', on); const b = el.querySelector('.cbtn'); if (b) { b.textContent = on ? '⌃' : '⌄'; b.setAttribute('aria-expanded', !on); b.setAttribute('aria-label', on ? 'გაშლა' : 'ჩაკეცვა'); } layout(); }
 $('#leftC').onclick = () => setCollapsed('#left', !$('#left').classList.contains('col'));
 $('#rightC').onclick = () => setCollapsed('#right', !$('#right').classList.contains('col'));
 addEventListener('keydown', e => { if (mode === 'micro' && !/INPUT/.test(document.activeElement.tagName)) { if (e.key === 'ArrowRight') openMicro(curMicro + 1); if (e.key === 'ArrowLeft') openMicro(curMicro - 1); } if (mode === 'patho' && curNoso && !/INPUT/.test(document.activeElement.tagName)) { if (e.key === 'ArrowRight') setStep(curStep + 1); if (e.key === 'ArrowLeft') setStep(curStep - 1); } });

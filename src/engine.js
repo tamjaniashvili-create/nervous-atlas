@@ -26,10 +26,21 @@ scene.add(cam); cam.add(new THREE.PointLight(0xffffff, 0.22));
 
 let MICRO = null;
 function resize() {
-  const w = innerWidth, h = innerHeight; R.setSize(w, h); cam.aspect = w / h; if (MICRO) MICRO.resize(w, h);
-  if (w <= 760) cam.setViewOffset(w, h, 0, Math.round(h * 0.2), w, h); else cam.clearViewOffset();
-  cam.updateProjectionMatrix();
+  const w = innerWidth, h = innerHeight; R.setSize(w, h); cam.aspect = w / h; if (MICRO) MICRO.cam.aspect = w / h;
+  layout();
 }
+// keep the model centred in the free area between/above the panels (no overlap at any size)
+function layout() {
+  const w = innerWidth, h = innerHeight, Lp = document.getElementById('left'), Rp = document.getElementById('right');
+  if (!Lp || !Rp) return;
+  document.documentElement.style.setProperty('--rh', Math.round(Rp.getBoundingClientRect().height) + 'px');
+  const L = Lp.getBoundingClientRect(), Rt = Rp.getBoundingClientRect();
+  let ox = 0, oy = 0;
+  if (w <= 760) { const lg = document.getElementById('legend').getBoundingClientRect(); const top = Math.max(lg.bottom, 90) + 4, bottom = Math.min(L.top, Rt.top) - 4; oy = Math.round(h / 2 - (top + bottom) / 2); }
+  else { const a = L.right + 8, b = Rt.left - 8; ox = Math.round(w / 2 - (a + b) / 2); oy = Rt.height < 120 && L.height < 120 ? 0 : 0; }
+  for (const c of [cam, MICRO && MICRO.cam]) { if (!c) continue; if (ox || oy) c.setViewOffset(w, h, ox, oy, w, h); else c.clearViewOffset(); c.updateProjectionMatrix(); }
+}
+if (window.ResizeObserver) { const ro = new ResizeObserver(() => layout()); addEventListener('DOMContentLoaded', () => {}); setTimeout(() => { ['left', 'right'].forEach(id => { const el = document.getElementById(id); if (el) ro.observe(el); }); }, 0); }
 MICRO = window.createMicro(R);
 addEventListener('resize', resize); resize();
 
@@ -459,7 +470,7 @@ $('#rightBody').addEventListener('click', e => {
   const lk = e.target.closest('[data-link]'); if (lk) { const id = lk.dataset.link, no = NOSOLOGY.find(x => x.id === id), nv = NORM.find(x => x.id === id);
     if (no) { setMode('patho'); openNoso(no, 0); } else if (nv) { setMode('norm'); showView(nv); } }
 });
-function setCollapsed(sel, on) { const el = $(sel); el.classList.toggle('col', on); const b = el.querySelector('.cbtn'); if (b) { b.textContent = on ? '⌃' : '⌄'; b.setAttribute('aria-expanded', !on); } }
+function setCollapsed(sel, on) { const el = $(sel); el.classList.toggle('col', on); const b = el.querySelector('.cbtn'); if (b) { b.textContent = on ? '⌃' : '⌄'; b.setAttribute('aria-expanded', !on); b.setAttribute('aria-label', on ? 'გაშლა' : 'ჩაკეცვა'); } layout(); }
 $('#leftC').onclick = () => setCollapsed('#left', !$('#left').classList.contains('col'));
 $('#rightC').onclick = () => setCollapsed('#right', !$('#right').classList.contains('col'));
 addEventListener('keydown', e => { if (mode === 'micro' && !/INPUT/.test(document.activeElement.tagName)) { if (e.key === 'ArrowRight') openMicro(curMicro + 1); if (e.key === 'ArrowLeft') openMicro(curMicro - 1); } if (mode === 'patho' && curNoso && !/INPUT/.test(document.activeElement.tagName)) { if (e.key === 'ArrowRight') setStep(curStep + 1); if (e.key === 'ArrowLeft') setStep(curStep - 1); } });

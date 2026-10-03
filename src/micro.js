@@ -283,7 +283,6 @@ window.createMicro = function (R) {
     scene, cam, ctl, steps: MICRO_STEPS,
     enter(i, instant) { active = true; step = i; T = 0; resetDynamic(); const id = MICRO_STEPS[i].id; if (instant) snap(id); else go(id); setLabels(LBL[id]); labelLayer.style.display = ''; },
     leave() { active = false; labelLayer.style.display = 'none'; ctl.enabled = false; },
-    resize(w, h) { cam.aspect = w / h; if (w <= 760) cam.setViewOffset(w, h, 0, Math.round(h * 0.2), w, h); else cam.clearViewOffset(); cam.updateProjectionMatrix(); },
     finish() { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } },
     update(dt) { if (!active) return null; T += dt;
       if (tween) { tween.t = Math.min(1, tween.t + dt / 1.1); const k = 1 - Math.pow(1 - tween.t, 3); ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
