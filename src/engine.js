@@ -53,7 +53,7 @@ const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
 const BASE = { cortex: 0xd9ad9c, cerebellum: 0xc99684, stem: 0xe6cdb8, deep: 0xb5a79c, ventricle: 0x6fa9c9, cranial: 0xf0dca6, spinal: 0xf0dca6, legs: 0xf0dca6, cord: 0xeedcc2, bone: 0xe9dec8, disc: 0xa9c6d6, muscle: 0x9a5c52, artery: 0x9c5a52 };
 const DEEPCOL = [[/thalamus/, 0x7fa7c9], [/caudate/, 0x8fbf8a], [/putamen/, 0xd6a25e], [/pallidus/, 0xc98a4a], [/hippocamp/, 0xc57fb0], [/amygdala/, 0xd9707a], [/internal capsule|corpus callosum|fornix|white matter/, 0xefe7dc], [/hypothalam|mammillary|tuber/, 0xc9b27a]];
 const LOBES = [[/precentral|frontal|orbital|straight/, 0x6f95d8, 'შუბლის წილი'], [/postcentral|parietal|supramarginal|angular/, 0xd8b85a, 'თხემის წილი'], [/temporal|fusiform/, 0x69b38a, 'საფეთქლის წილი'], [/occipital/, 0x9b7ed0, 'კეფის წილი'], [/cingulate|parahippocampal/, 0xd07fa2, 'ლიმბური ქერქი'], [/insula|short gyrus/, 0xe08e55, 'კუნძული']];
-const COL = { red: 0xe2574c, amber: 0xe9a23b, blue: 0x6b9be0, green: 0x63b57d, teal: 0x5fc2c0, grey: 0x5a5d62, gold: 0xe6c46e };
+const COL = { red: 0xe2574c, amber: 0xe9a23b, blue: 0x6b9be0, green: 0x63b57d, teal: 0x5fc2c0, grey: 0x5a5d62, gold: 0xe6c46e, violet: 0x9b6fd0, blood: 0x7a1414, pink: 0xff4f7a, white: 0xeef2f5 };
 const cLin = k => lin(COL[k] != null ? COL[k] : k);
 
 function makeMat(g) {
@@ -126,6 +126,7 @@ async function loadPack() {
 
 // lower-limb + lumbosacral nerves: not modelled in BodyParts3D → schematic tubes on the real skeleton
 const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const HEADC = V3(0, 1.63, -0.02); // approx. centre of the cranium (outward normal for skull anchors)
 const LEGPATHS = {};
 function tube(pts, r0, r1) {
   const c = new THREE.CatmullRomCurve3(pts, false, 'centripetal'); const tg = new THREE.TubeGeometry(c, 140, 1, 12, false);
@@ -159,7 +160,7 @@ function snapTo(mesh, to) { const p = mesh.geometry.attributes.position, v = V3(
   return V3(p.getX(bi), p.getY(bi), p.getZ(bi)); }
 function anchor(a) {
   if (Array.isArray(a)) return V3(...a);
-  if (a.snap) { const m = find(a.snap); return m ? snapTo(m, a.to) : V3(...a.to); }
+  if (a.snap) { const m = find(a.snap); const v = m ? snapTo(m, a.to) : V3(...a.to); if (a.out) v.add(v.clone().sub(HEADC).normalize().multiplyScalar(a.out)); return v; }
   if (a.c) { const m = find(a.c); const v = m ? m.userData.c.clone() : V3(0, 1, 0); v.x += a.dx || 0; v.y += a.dy || 0; v.z += a.dz || 0; return v; }
   if (a.y) { const m = find(a.y); return V3(a.x || 0, m ? m.userData.c.y : 1, a.z || 0); }
   return V3(0, 1, 0);
@@ -182,6 +183,8 @@ const CAMS = {
   handL: [[0.25, 0.9, 0.02], [0.45, 1.04, 0.46]], elbowL: [[0.2, 1.13, -0.03], [0.3, 1.2, -0.42]], humerusL: [[0.19, 1.24, -0.03], [0.42, 1.3, -0.5]],
   legL: [[0.1, 0.42, -0.02], [0.7, 0.55, 0.45]], kneeL: [[0.11, 0.43, -0.03], [0.42, 0.5, 0.2]], legBack: [[0.06, 0.62, -0.06], [0.45, 0.8, -1.35]],
   vessels2: [[0.025, 1.625, 0.0], [0.34, 1.7, 0.22]], lumbarSide: [[0.0, 1.0, -0.035], [0.42, 1.04, -0.08]],
+  sella: [[0.0, 1.6, 0.025], [0.25, 1.645, 0.11]], headL: [[0.03, 1.63, -0.01], [0.42, 1.7, 0.12]], headR: [[-0.02, 1.66, 0.01], [-0.3, 1.86, 0.3]],
+  trunkR: [[-0.03, 1.36, 0.02], [-0.42, 1.48, 1.55]],
   legs: [[0, 0.5, -0.02], [0.35, 0.65, 1.7]], motor: [[0, 1.2, 0], [0.9, 1.35, 2.2]],
 };
 let tween = null;
@@ -263,6 +266,21 @@ function addWave(w) { const p = anchor(w.at), col = COL[w.c || 'red'];
   const m = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .25, depthWrite: false, blending: THREE.AdditiveBlending }));
   m.position.copy(p); m.renderOrder = 17; fxRoot.add(m); waves.push({ m, r: w.r, t: Math.random() }); }
 
+function addTube(t) { const pts = t.path.map(anchor); const c = new THREE.CatmullRomCurve3(pts, false, 'centripetal'); const col = lin(COL[t.c] != null ? COL[t.c] : 0xeef2f5);
+  const m = new THREE.Mesh(new THREE.TubeGeometry(c, Math.max(32, pts.length * 24), t.r || .0011, 8, false), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: .3, roughness: .4, depthTest: !t.xray, transparent: !!t.xray, opacity: 1 }));
+  m.renderOrder = t.xray ? 21 : 6; fxRoot.add(m); }
+function addMass(o) { const p = anchor(o.at), r = o.r, g = new THREE.IcosahedronGeometry(1, 4), pa = g.attributes.position;
+  const nr = new Float32Array(pa.count * 3);
+  for (let i = 0; i < pa.count; i++) { const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i); nr[i * 3] = x; nr[i * 3 + 1] = y; nr[i * 3 + 2] = z; const k = r * (1 + .13 * Math.sin(x * 5 + 1) * Math.sin(y * 4 + 2) * Math.sin(z * 6 + 3) + .05 * Math.sin(x * 11 + y * 9)); pa.setXYZ(i, x * k, y * k, z * k); }
+  g.setAttribute('normal', new THREE.BufferAttribute(nr, 3)); const col = lin(COL[o.c || 'violet']);
+  const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: o.glow || .22, roughness: .55, transparent: true, opacity: o.op || .95, depthTest: !o.xray }));
+  m.position.copy(p); if (o.sc) m.scale.set(...o.sc); m.renderOrder = o.xray ? 21 : 7; fxRoot.add(m); }
+function addFlap(f) { const p = anchor(f.at), n = p.clone().sub(HEADC).normalize(), q = new THREE.Quaternion().setFromUnitVectors(V3(0, 0, 1), n);
+  if (f.hole !== false) { const d = new THREE.Mesh(new THREE.CircleGeometry(f.r, 40), new THREE.MeshBasicMaterial({ color: 0x2a0d0b, transparent: true, opacity: f.r > .01 ? .32 : .8, depthTest: false, side: THREE.DoubleSide }));
+    d.quaternion.copy(q); d.position.copy(p).addScaledVector(n, .001); d.renderOrder = 20; fxRoot.add(d); }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(f.r, f.w || .0013, 8, 56), new THREE.MeshBasicMaterial({ color: COL[f.c || 'amber'], depthTest: false }));
+  ring.quaternion.copy(q); ring.position.copy(p).addScaledVector(n, .0015); ring.renderOrder = 21; fxRoot.add(ring); }
+
 let pathoMicro = false;
 function exitPathoMicro() { if (pathoMicro) { MICRO.leave(); pathoMicro = false; ctl.enabled = true; MICRO.ctl.enabled = false; } }
 function applyFx(fx, def) {
@@ -274,7 +292,7 @@ function applyFx(fx, def) {
   baseState(show.concat(layerExtra(show)), op, !!fx.dim);
   for (const o of fx.only || []) { const r = re(o.m); for (const m of ALL) if (m.userData.g === o.g && !r.test(m.userData.lname)) m.visible = false; }
   hl(fx.hl); grey(fx.grey); scaleAbout(fx.atrophy, .85); scaleAbout(fx.swell, 1.2); lesion(fx.lesion);
-  (fx.flow || []).forEach(addFlow); if (fx.plaques) addPlaques(fx.plaques); if (fx.wave) addWave(fx.wave);
+  (fx.flow || []).forEach(addFlow); (fx.tube || []).forEach(addTube); (fx.mass || []).forEach(addMass); (fx.flap || []).forEach(addFlap); if (fx.plaques) addPlaques(fx.plaques); if (fx.wave) addWave(fx.wave);
   if (fx.spread) spread = Object.assign({ t0: performance.now(), last: 0 }, fx.spread);
   for (const mv of fx.move || []) { const r = re(mv.m); for (const m of ALL) if (r.test(m.userData.lname)) m.position.set(...mv.d); }
   if (fx.cut) { const c = new THREE.LineCurve3(V3(...fx.cut[0]), V3(...fx.cut[1])); const t = new THREE.Mesh(new THREE.TubeGeometry(c, 8, .0018, 8, false), new THREE.MeshBasicMaterial({ color: COL.red, depthTest: false })); t.renderOrder = 21; fxRoot.add(t); }
@@ -595,8 +613,8 @@ function simClick(ev) {
 }
 function renderSimLeft(L) {
   $('#leftTitle').textContent = 'ჩარევა · მოდელირებები';
-  L.innerHTML = '<div class="vlist">' + SIMS.map(s => `<button class="vitem" type="button" data-sim="${s.id}" aria-current="${s === curSim}"><span class="dot">${s.scene === 'nerve' ? '✂' : s.id === 'stroke' ? '⏱' : '⚕'}</span><span><b>${esc(s.ka)}</b><small>${esc(s.kind)}</small></span></button>`).join('') + '</div>' +
-    '<div class="layers" style="display:block"><h3>შემდეგ ეტაპზე</h3>' + SIM_SOON.map(([t, s]) => `<div class="vitem" style="opacity:.5;cursor:default"><span class="dot">·</span><span><b>${esc(t)}</b><small>${esc(s)}</small></span></div>`).join('') + '</div>';
+  L.innerHTML = '<div class="vlist">' + SIMS.map(s => `<button class="vitem" type="button" data-sim="${s.id}" aria-current="${s === curSim}"><span class="dot">${esc(s.icon || '⚕')}</span><span><b>${esc(s.ka)}</b><small>${esc(s.kind)}</small></span></button>`).join('') + '</div>' + (SIM_SOON.length ? 
+    '<div class="layers" style="display:block"><h3>შემდეგ ეტაპზე</h3>' + SIM_SOON.map(([t, s]) => `<div class="vitem" style="opacity:.5;cursor:default"><span class="dot">·</span><span><b>${esc(t)}</b><small>${esc(s)}</small></span></div>`).join('') + '</div>' : '');
 }
 function renderSimRight(B) {
   const s = curSim, n = s.steps.length, st = s.steps[simStep];

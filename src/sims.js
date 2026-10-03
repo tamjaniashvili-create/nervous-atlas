@@ -1,18 +1,12 @@
 /* ჩარევა: ინტერაქტიული მოდელირებები.
    step.type: 'choice' (ვარიანტები, ok/fb/min) · 'tool' (ინსტრუმენტი + დაწკაპება მოდელზე) · 'slider' (ნერვის ორიენტაცია)
    step.fx — სცენა ეტაპის დასაწყისში; step.done — სცენა წარმატების შემდეგ (engine → applyFx / ნერვის API). */
-const SIM_SOON = [
-  ['ჰიპოფიზის ადენომის ტრანსსფენოიდური ამოკვეთა', 'ჰიპოფიზი'],
-  ['ტრეპანაცია (კრანიოტომია)', 'თავის ქალა'],
-  ['თავის ტვინის სიმსივნის ამოკვეთა', 'ექსტრიპაცია'],
-  ['ვენტრიკულო-პერიტონეული შუნტი', 'ჰიდროცეფალია'],
-  ['EC–IC ბაიპასი (STA–MCA)', 'რევასკულარიზაცია'],
-];
+const SIM_SOON = [];
 const STROKE_BRAIN = ['cortex', 'cerebellum', 'stem', 'deep', 'artery'];
 const MCA_CLOT = { c: 'sphenoid part of left middle cerebral' };
 const SIMS = [
 {
-  id: 'stroke', ka: 'იშემიური ინსულტი: მწვავე ფაზის მართვა', en: 'Acute ischemic stroke — reperfusion', kind: 'კლინიკური სცენარი + თრომბექტომია', scene: 'macro', clock: 70,
+  id: 'stroke', ka: 'იშემიური ინსულტი: მწვავე ფაზის მართვა', en: 'Acute ischemic stroke — reperfusion', kind: 'კლინიკური სცენარი + თრომბექტომია', icon: '⏱', scene: 'macro', clock: 70,
   case: '67 წლის მამაკაცი, წინაგულების ფიბრილაციით (ანტიკოაგულანტს არ იღებს). 09:00-ზე უეცრად განუვითარდა მარჯვენამხრივი სისუსტე და მეტყველების დარღვევა. საავადმყოფოში მივიდა 10:10-ზე. NIHSS 16, AP 178/96 mmHg, გლუკოზა 7,4 mmol/L, წონა 80 კგ.',
   show: STROKE_BRAIN, op: { cortex: .25, cerebellum: .4 },
   steps: [
@@ -65,7 +59,7 @@ const SIMS = [
   refs: [['AHA/ASA 2019: Early Management of Acute Ischemic Stroke (Powers et al.)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Powers+2019+guidelines+early+management+acute+ischemic+stroke'], ['ESO guideline: IV thrombolysis (Berge et al. 2021)', 'https://pubmed.ncbi.nlm.nih.gov/?term=European+Stroke+Organisation+guidelines+intravenous+thrombolysis+Berge+2021'], ['ELAN trial (Fischer et al., NEJM 2023)', 'https://pubmed.ncbi.nlm.nih.gov/?term=ELAN+early+versus+later+anticoagulation+stroke+atrial+fibrillation']],
 },
 {
-  id: 'mdisc', ka: 'მიკროდისკექტომია L5–S1', en: 'Lumbar microdiscectomy', kind: 'ეტაპობრივი ოპერაცია', scene: 'macro',
+  id: 'mdisc', ka: 'მიკროდისკექტომია L5–S1', en: 'Lumbar microdiscectomy', kind: 'ეტაპობრივი ოპერაცია', icon: '⚕', scene: 'macro',
   case: '42 წლის ქალი. 10 კვირაა აქვს მარცხენამხრივი S1 რადიკულოპათია (ტკივილი დუნდულიდან ტერფის ლატერალურ კიდემდე). NSAID-ები, ფიზიოთერაპია და ეპიდურული სტეროიდი არ დაეხმარა. MRI: L5–S1 მარცხენა პარაცენტრალური ექსტრუზია. აქილევსის რეფლექსი დაქვეითებულია, პლანტარული ფლექსია 4/5. კაუდა ეკვინას ნიშნები არ აქვს.',
   show: ['cord', 'spinal', 'legs', 'bone', 'disc'], op: { bone: .55 },
   steps: [
@@ -129,7 +123,7 @@ const SIMS = [
   refs: [['StatPearls: Lumbar Disc Herniation', 'https://www.ncbi.nlm.nih.gov/books/?term=StatPearls+lumbar+disc+herniation'], ['StatPearls: Microdiscectomy', 'https://www.ncbi.nlm.nih.gov/books/?term=StatPearls+microdiscectomy'], ['NASS guideline: lumbar disc herniation with radiculopathy', 'https://pubmed.ncbi.nlm.nih.gov/?term=NASS+evidence-based+clinical+guideline+lumbar+disc+herniation+radiculopathy']],
 },
 {
-  id: 'nerve', ka: 'პერიფერიული ნერვის აღდგენა (ნევრორაფია)', en: 'Median nerve repair — epineural neurorrhaphy', kind: 'ეტაპობრივი ოპერაცია (მიკროქირურგია)', scene: 'nerve',
+  id: 'nerve', ka: 'პერიფერიული ნერვის აღდგენა (ნევრორაფია)', en: 'Median nerve repair — epineural neurorrhaphy', kind: 'ეტაპობრივი ოპერაცია (მიკროქირურგია)', icon: '✂', scene: 'nerve',
   case: '28 წლის მამაკაცი, შუშით მიღებული ჭრილობა მაჯის წინა ზედაპირზე, 3 საათის წინ. I–III თითის ხელისგულის ზედაპირზე ანესთეზიაა, ცერის ოპოზიცია შეუძლებელია. ჭრილობა სუფთა და ბასრია.',
   steps: [
     { type: 'choice', t: 'ტაქტიკა', q: 'სავარაუდოა მედიანური ნერვის სრული გაწყვეტა. როგორ მოიქცევით?',
