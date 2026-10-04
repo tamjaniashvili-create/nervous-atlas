@@ -38,6 +38,13 @@ a{color:var(--myelin)}
 .mode button[data-m="patho"][aria-pressed="true"]{background:var(--lesion);color:#fff}
 .mode button[data-m="micro"][aria-pressed="true"]{background:#8f78d6;color:#fff}
 .mode button[data-m="sim"][aria-pressed="true"]{background:#2f9e8f;color:#fff}
+.mode button[data-m="img"][aria-pressed="true"]{background:#4f7fc4;color:#fff}
+#imgWrap{position:fixed;z-index:2}
+#imgWrap[hidden]{display:none}
+#imgCv{display:block;border-radius:10px;background:#000;box-shadow:0 10px 40px rgba(0,0,0,.45);touch-action:pan-x}
+.imgbar{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--ink2)}
+.imgbar input[type=range]{flex:1;min-width:60px;accent-color:var(--myelin)}
+body[data-mode="img"] #stage canvas{visibility:hidden}
 .opts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
 .opt{text-align:left;border:1px solid var(--line2);background:rgba(236,230,218,.03);border-radius:9px;padding:9px 11px;cursor:pointer;font-size:13px;line-height:1.4}
 .opt:hover:not(:disabled){border-color:var(--ink2)}
@@ -173,6 +180,7 @@ a{color:var(--myelin)}
     <button type="button" data-m="micro" aria-pressed="false">ნეირონი</button>
     <button type="button" data-m="patho" aria-pressed="false">პათოლოგია</button>
     <button type="button" data-m="sim" aria-pressed="false">ჩარევა</button>
+    <button type="button" data-m="img" aria-pressed="false">კვლევები</button>
   </div>
   <div class="sp"></div>
   <nav class="toplinks">
@@ -190,6 +198,9 @@ a{color:var(--myelin)}
   <div class="scroll" id="rightBody" style="padding:0"></div>
 </aside>
 
+<div id="imgWrap" hidden><canvas id="imgCv" aria-label="კვლევის ჭრილი"></canvas>
+  <div class="imgbar"><button type="button" class="chip" data-pl="ax" aria-pressed="true">აქს.</button><button type="button" class="chip" data-pl="cor" aria-pressed="false">კორ.</button><button type="button" class="chip" data-pl="sag" aria-pressed="false">საგ.</button>
+  <input id="imgSlice" type="range" min="0" max="80" value="40" aria-label="ჭრილის დონე"><button type="button" class="chip" id="imgAnn" aria-pressed="true">ისარი</button></div></div>
 <div id="legend"></div>
 <div id="attr">3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია</div>
 <div id="tip" hidden></div>
@@ -1542,6 +1553,467 @@ SIMS.push(
 },
 );
 
+/* კვლევები: მოდალობები და შემთხვევები.
+   კომპონენტის v = [CT, CT ძვალი, CT+კონტრ., T1, T1+Gd, T2, FLAIR, DWI, ADC, FDG, FET, DOTATATE] (0–1; PET-ისთვის შთანთქმა).
+   k:'edema' — მხოლოდ თეთრ ნივთიერებაში (ვაზოგენური შეშუპება ქერქს ზოგავს). */
+const IV = (...a) => a;
+const IMG_MODS = {
+  ct: { chip: 'CT', short: 'CT  W80 L40', name: 'CT კონტრასტის გარეშე (ტვინის ფანჯარა)',
+    how: 'რენტგენის სხივის შესუსტება ჰაუნსფილდის ერთეულებში (HU): ჰაერი −1000, ლიქვორი 0–15, თეთრი ნივთიერება ≈ 25–30, რუხი ≈ 35–45, მწვავე სისხლი 50–80, ძვალი > 700. პირველი კვლევა მწვავე სიტუაციაში: სისხლჩაქცევა, ჰიდროცეფალია, მასის ეფექტი, მოტეხილობა, კალციფიკაცია. სიმსივნის დასახასიათებლად MRI-ზე გაცილებით ნაკლებად მგრძნობიარეა.',
+    safe: 'დასხივება: თავის CT ≈ 1–2 mSv. ორსულობისას თავის CT ნაყოფისთვის მინიმალური დოზით ტარდება, თუ ჩვენება არსებობს.' },
+  ctb: { chip: 'CT ძვალი', short: 'CT  W2500 L500', name: 'CT, ძვლის ფანჯარა',
+    how: 'იგივე მონაცემები ფართო ფანჯარაში (W ≈ 2000–3000 HU): ძვლის სტრუქტურა, ჰიპეროსტოზი, ეროზია, ლიზისი, კალციფიკაცია, სინუსების და მასტოიდის პნევმატიზაცია.', safe: '' },
+  ctc: { chip: 'CT+C', short: 'CT + contrast', name: 'კონტრასტული CT',
+    how: 'იოდშემცველი კონტრასტი (მაგ., Iohexol, Iopamidol) გროვდება იქ, სადაც ჰემატოენცეფალური ბარიერი დარღვეულია. სიმსივნის შეფასებისთვის გამოიყენება მაშინ, როცა MRI უკუნაჩვენებია ან მიუწვდომელია.',
+    safe: 'eGFR < 30 — კონტრასტით ინდუცირებული თირკმლის დაზიანების რისკი, ჰიდრატაცია. მეტფორმინი (Metformin) ჩერდება, თუ eGFR < 30 ან მწვავე თირკმლის დაზიანებაა, და 48 სთ-ის შემდეგ, თირკმლის ფუნქციის შემოწმებით განახლდება (ACR). წინა ალერგიული რეაქციისას: პრემედიკაცია (პრედნიზონი 50 მგ კვლევამდე 13, 7 და 1 სთ-ით + დიფენჰიდრამინი 50 მგ 1 სთ-ით ადრე). ჰიპერთირეოზი: იოდით ინდუცირებული თირეოტოქსიკოზის რისკი.' },
+  t1: { chip: 'T1', short: 'MR  T1', name: 'MRI: T1-შეწონილი',
+    how: 'ანატომიური თანმიმდევრობა: ლიქვორი მუქია, თეთრი ნივთიერება რუხზე ღია (მიელინის ლიპიდები), ცხიმი კაშკაშა. T1 სიგნალს ზრდის მეთემოგლობინი (ქვემწვავე სისხლი), მელანინი, ცხიმი და გადოლინიუმი.', safe: '' },
+  t1c: { chip: 'T1+Gd', short: 'MR  T1 + Gd', name: 'MRI: T1 გადოლინიუმით',
+    how: 'გადოლინიუმი T1-ს ამოკლებს: კაშკაშაა იქ, სადაც ბარიერი დარღვეულია, ან ქსოვილი ბარიერის გარეთაა (მენინგები, ჰიპოფიზი, ქოროიდული წნული). სიმსივნის დიაგნოსტიკის, ოპერაციის დაგეგმვის და მკურნალობის შეფასების (RANO) საფუძველი; ოპტიმალურია 3D თხელშრიანი თანმიმდევრობა.',
+    safe: 'მაკროციკლური აგენტები (Gadobutrol, Gadoterate), ≈ 0,1 მმოლ/კგ. eGFR < 30: ნეფროგენური სისტემური ფიბროზის რისკი ძირითადად I ჯგუფის (ხაზოვანი) აგენტებთანაა — გამოიყენება II ჯგუფი. ხაზოვანი აგენტების განმეორებითი შეყვანისას გადოლინიუმი ტვინში გროვდება (კბილისებრი ბირთვი, ფერმკრთალი ბირთვი). ორსულობისას — მხოლოდ აუცილებლობისას. MRI-ის უკუჩვენებები: MRI-არათავსებადი კარდიოსტიმულატორი, ფერომაგნიტური ანევრიზმის კლიპი, ზოგი იმპლანტი და უცხო სხეული.' },
+  t2: { chip: 'T2', short: 'MR  T2', name: 'MRI: T2-შეწონილი',
+    how: 'თავისუფალი წყალი კაშკაშაა: ლიქვორი თეთრია, რუხი ნივთიერება თეთრზე ღია. შეშუპება, კისტა, ნეკროზი — კაშკაშა; მჭიდრო უჯრედოვანი სიმსივნე (ლიმფომა), კალციფიკაცია და დეზოქსიჰემოგლობინი — შედარებით მუქი.', safe: '' },
+  flair: { chip: 'FLAIR', short: 'MR  FLAIR', name: 'MRI: FLAIR',
+    how: 'T2, რომელშიც ლიქვორის სიგნალი ჩახშობილია: პერივენტრიკულური შეშუპება, ინფილტრაცია და გლიოზი კარგად ჩანს. დიფუზური გლიომის არაკონტრასტირებადი ნაწილის შეფასების მთავარი თანმიმდევრობა.', safe: '' },
+  dwi: { chip: 'DWI', short: 'MR  DWI b1000', name: 'MRI: დიფუზია (DWI)',
+    how: 'წყლის მოლეკულების მოძრაობა ქსოვილში. სადაც დიფუზია შეზღუდულია (მაღალი უჯრედულობა, ციტოტოქსიკური შეშუპება, ჩირქი), DWI კაშკაშაა და ADC მუქი. ყოველთვის ADC-სთან ერთად ფასდება, რომ T2 shine-through გამოირიცხოს.', safe: '' },
+  adc: { chip: 'ADC', short: 'MR  ADC', name: 'MRI: ADC რუკა',
+    how: 'დიფუზიის რაოდენობრივი რუკა: დაბალი ADC (მუქი) = შეზღუდული დიფუზია. საშუალოდ: ლიმფომა < გლიობლასტომა < მეტასტაზი (გადაფარვით); აბსცესის ჩირქი — ძალიან დაბალი.', safe: '' },
+  fdg: { chip: 'FDG', short: 'PET-CT  18F-FDG', name: 'PET-CT: ¹⁸F-FDG',
+    how: 'ფტორდეზოქსიგლუკოზა GLUT-ით შედის, ჰექსოკინაზით ფოსფორილირდება და უჯრედში „იჭედება". ნორმალური რუხი ნივთიერება გლუკოზას ბევრს მოიხმარს, ამიტომ ფონი მაღალია და დაბალი ხარისხის ან მცირე სიმსივნე ცუდად ჩანს. მთელი სხეულის FDG PET-CT: პირველადი სიმსივნის ძიება მეტასტაზებისას, ლიმფომის სისტემური სტადირება. ¹⁸F T½ ≈ 110 წთ.',
+    safe: 'უზმოდ ≥ 4–6 სთ; გლიკემია სასურველია < 11 მმოლ/ლ (≈ 200 მგ/დლ) — ჰიპერგლიკემია შთანთქმას ამცირებს. სწრაფმოქმედი ინსულინი კვლევის წინ ახლოს არ შეჰყავთ (კუნთებში გადანაწილება). კორტიკოსტეროიდები ლიმფომის შთანთქმას მკვეთრად ამცირებს. ტრაცერის შეყვანიდან სკანირებამდე ≈ 30–60 წთ მოსვენება.' },
+  fet: { chip: 'FET', short: 'PET-CT  18F-FET', name: 'PET-CT: ¹⁸F-FET (ამინომჟავური)',
+    how: 'ფტორეთილტიროზინი შედის LAT1 ტრანსპორტერით, რომელიც გლიომის უჯრედებში გაძლიერებულია. ნორმალური ტვინის ფონი დაბალია, ამიტომ სიმსივნე ჩანს მაშინაც, როცა გადოლინიუმით არ კონტრასტირდება. ჩვენებები (PET-RANO, EANO/SNMMI 2019): ბიოფსიის სამიზნე, რეზექციის და დასხივების საზღვარი, რეციდივის გარჩევა მკურნალობასთან დაკავშირებული ცვლილებებისგან (ფსევდოპროგრესია, რადიონეკროზი), პასუხის შეფასება. პარამეტრები: TBRmax, TBRmean, დინამიკური მრუდი. ალტერნატივები: ¹¹C-MET (T½ 20 წთ, ადგილზე ციკლოტრონი), ¹⁸F-FDOPA.',
+    safe: 'უზმოდ ≥ 4 სთ (ამინომჟავური საკვები კონკურენციას უწევს). დასხივება მთელი სხეულის FDG-ზე ნაკლებია (მხოლოდ თავი).' },
+  dota: { chip: 'DOTATATE', short: 'PET-CT  68Ga-DOTATATE', name: 'PET-CT: ⁶⁸Ga-DOTATATE',
+    how: 'სომატოსტატინის ანალოგი, რომელიც SSTR2 რეცეპტორს უკავშირდება. SSTR2 მენინგიომის თითქმის ყველა უჯრედზე მაღალი სიმკვრივითაა, ხოლო დაუზიანებელი ტვინი ტრაცერს თითქმის არ შთანთქავს. ფიზიოლოგიური შთანთქმა — ჰიპოფიზი. ჩვენებები: მენინგიომის საზღვარი (განსაკუთრებით თავის ქალის ფუძე, ძვლის ინვაზია), ნარჩენი სიმსივნე და რეციდივი vs ნაწიბური, დასხივების დაგეგმვა; ნეიროენდოკრინული სიმსივნეები. ⁶⁸Ga T½ ≈ 68 წთ.',
+    safe: 'ხანგრძლივმოქმედი სომატოსტატინის ანალოგების (Octreotide LAR, Lanreotide) მიღებისას კვლევა ტარდება მომდევნო ინექციის წინ (რეცეპტორის ბლოკადის შესამცირებლად); უზმოდ ყოფნა საჭირო არ არის.' },
+};
+
+const MEN_AT = { snap: 'left parietal bone', to: [0.066, 1.69, -0.03], out: -0.02 };
+const MET_ENH = IV(.5, .33, .72, .4, .93, .6, .62, .5, .5, .6, .65, .08), MET_NEC = IV(.3, .31, .3, .25, .25, .85, .55, .2, .8, .1, .2, .02);
+const IMG_CASES = [
+{ id: 'normal', grp: 'ნორმა', ka: 'ნორმალური თავის ტვინი', sub: 'ორიენტირი ყველა კვლევისთვის', en: 'Normal adult brain', mod: 't1', plane: 'ax', slice: 1.645,
+  find: {
+    ct: 'რუხი ნივთიერება თეთრზე ოდნავ ღიაა, ლიქვორი (პარკუჭები, ღარები) მუქი, ძვალი თეთრი. ბაზალური განგლიები ღია ფერისაა, შიგნითა კაფსულა — მუქი.',
+    ctb: 'ჩანს თავის ქალის გარეთა და შიგნითა ფირფიტა. ტვინის ქსოვილი ამ ფანჯარაში თითქმის ერთგვაროვანია.',
+    ctc: 'ტვინის პარენქიმა ნორმაში არ კონტრასტირდება — ბარიერი დაუზიანებელია. კონტრასტს აგროვებს სისხლძარღვები, ვენური სინუსები, ქოროიდული წნული და ჰიპოფიზი.',
+    t1: 'თეთრი ნივთიერება რუხზე ღიაა, ლიქვორი მუქი: კარგი ანატომიური გარჩევადობა (ხვეულები, ბაზალური განგლიები, შიგნითა კაფსულა).',
+    t1c: 'ნორმაში კონტრასტირდება მხოლოდ ბარიერის გარეთ მდებარე სტრუქტურები: ჰიპოფიზი, ქოროიდული წნული, ვენური სინუსები და დურის თხელი ხაზი.',
+    t2: 'ლიქვორი თეთრია, რუხი ნივთიერება თეთრზე ღია. ასაკთან ერთად შეიძლება გამოჩნდეს მცირე ჰიპერინტენსიური კერები (მიკროანგიოპათია).',
+    flair: 'ლიქვორის სიგნალი ჩახშობილია. პარენქიმა ერთგვაროვანია, პერივენტრიკულური ჰიპერინტენსივობის გარეშე.',
+    dwi: 'შეზღუდული დიფუზიის კერები არ არის. ლიქვორი DWI-ზე მუქია, ADC-ზე — კაშკაშა.',
+    fdg: 'რუხი ნივთიერება (ქერქი, ბაზალური განგლიები, თალამუსი) გლუკოზას ინტენსიურად მოიხმარს, თეთრი ნივთიერება — მცირედ. ეს მაღალი ფონი თავის ტვინის სიმსივნეების დიაგნოსტიკაში FDG-ის მთავარი შეზღუდვაა.',
+    fet: 'ნორმალური ტვინის შთანთქმა დაბალი და ერთგვაროვანია, ოდნავ მეტი — ვენურ სინუსებში და კუნთებში.',
+    dota: 'ტვინი ტრაცერს თითქმის არ შთანთქავს. ფიზიოლოგიური შთანთქმა — ჰიპოფიზში (კორონარულ ჭრილზე).',
+  },
+  key: ['CT — სისწრაფე: სისხლჩაქცევა, ჰიდროცეფალია, ძვალი, კალციფიკაცია', 'MRI — სიმსივნის დიაგნოსტიკის სტანდარტი: T1, T2, FLAIR, DWI/ADC, T1+Gd; საჭიროებისამებრ პერფუზია და სპექტროსკოპია', 'PET — მეტაბოლიზმი და რეცეპტორები: დამატებითი, კონკრეტულ კითხვაზე პასუხი', 'ჭრილების გადასაადგილებლად: სლაიდერი, მაუსის ბორბალი ან ↑ ↓ ღილაკები'],
+  refs: [['EANO/RANO: MRI protocol for brain tumors (Ellingson 2015, BTIP)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Ellingson+2015+consensus+recommendations+standardized+brain+tumor+imaging+protocol']] },
+{ id: 'gbm', grp: 'ინტრააქსიალური სიმსივნეები', ka: 'გლიობლასტომა', sub: 'IDH-ველური ტიპი · მარჯვენა შუბლის წილი', en: 'Glioblastoma, IDH-wildtype', who: 'WHO CNS5 · გრადაცია 4', mod: 't1c', plane: 'ax', sim: 'gbm',
+  comps: [
+    { at: [-0.033, 1.664, 0.032], r: [.034, .03, .036], k: 'edema', irr: .2 },
+    { at: [-0.033, 1.664, 0.032], r: [.017, .015, .018], irr: .18, main: true, label: 'გლიობლასტომა', v: IV(.47, .33, .75, .38, .95, .62, .68, .55, .45, .85, .95, .12) },
+    { at: [-0.034, 1.663, 0.033], r: [.0105, .0095, .0115], irr: .25, v: IV(.24, .31, .25, .2, .22, .88, .5, .18, .85, .05, .25, .02) },
+  ],
+  find: {
+    ct: 'მარჯვენა შუბლის წილში იზო/ჰიპოდენსიური სიმსივნე უფრო მუქი ნეკროზული ცენტრით; გარშემო ვაზოგენური შეშუპება, რომელიც თეთრ ნივთიერებას მიჰყვება და ქერქს ზოგავს. მასის ეფექტი: პარკუჭის დეფორმაცია.',
+    ctb: 'ძვლის ცვლილება არ არის: გლიომა ინტრააქსიალური სიმსივნეა.',
+    ctc: 'სქელი, არათანაბარი რგოლისებრი კონტრასტირება ცენტრალური ნეკროზით.',
+    t1: 'ჰიპოინტენსიური წარმონაქმნი, ნეკროზი უფრო მუქია. ზოგჯერ ჩანს სისხლჩაქცევის T1-ჰიპერინტენსიური უბნები.',
+    t1c: 'სქელი, არათანაბარი, „ფესტონისებრი" რგოლისებრი კონტრასტირება, ცენტრში არაკონტრასტირებადი ნეკროზი. ხშირად გადადის კორპუს კალოზუმზე („პეპლის" გლიომა). რეზექციის მოცულობა ფასდება კონტრასტირებადი ნაწილით.',
+    t2: 'ჰეტეროგენული: ნეკროზი კაშკაშაა, სოლიდური ნაწილი — შუალედური; გარს ფართო ჰიპერინტენსიური შეშუპება.',
+    flair: 'გარშემო FLAIR-ჰიპერინტენსიური ზონა არის ვაზოგენური შეშუპება და სიმსივნური ინფილტრაცია ერთად (MRI-ით მათი გარჩევა შეუძლებელია): სიმსივნური უჯრედები კონტრასტირებადი საზღვრის მიღმაც არის.',
+    dwi: 'სოლიდურ კიდეში DWI ზომიერად მაღალია, ADC შუალედური-დაბალი (მაღალი უჯრედულობა); ნეკროზში ADC მაღალია. აბსცესისგან განსხვავებით ცენტრში დიფუზია შეზღუდული არ არის.',
+    fdg: 'კონტრასტირებადი კიდე ჰიპერმეტაბოლურია (რუხი ნივთიერების დონეზე ან მეტი), ნეკროზი „ცივია". მაღალი ფონის გამო საზღვრის შეფასება რთულია.',
+    fet: 'ინტენსიური შთანთქმა დაბალ ფონზე; მეტაბოლური მოცულობა ხშირად კონტრასტირებად ზონაზე დიდია. მკურნალობის შემდეგ ეხმარება რეციდივის გარჩევაში ფსევდოპროგრესიისა და რადიონეკროზისგან: რეციდივს მაღალი TBR და ადრეული პიკით დაღმავალი დინამიკური მრუდი ახასიათებს.',
+    dota: 'გლიომა SSTR2-ს მნიშვნელოვნად არ გამოხატავს. ბარიერის დარღვევის ზონაში შესაძლებელია სუსტი, არასპეციფიკური შთანთქმა.',
+  },
+  key: ['რგოლისებრი კონტრასტირება + ნეკროზი + ფართო შეშუპება ხანდაზმულში', 'დიფ. დიაგნოზი: მეტასტაზი, აბსცესი (DWI!), ლიმფომა', 'ოპერაციამდე: T1+Gd, FLAIR, DWI, პერფუზია (rCBV ↑); ოპერაციის შემდეგ MRI 48–72 სთ-ში', 'FET PET: ბიოფსიის სამიზნე, რეციდივი vs რადიონეკროზი'],
+  refs: [['PET-RANO / EANO / SNMMI: PET imaging in gliomas (Law 2019)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Law+2019+joint+EANM+EANO+RANO+SNMMI+practice+guidelines+PET+gliomas'], ['WHO CNS5 classification (Louis 2021)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Louis+2021+WHO+classification+tumors+central+nervous+system+summary']] },
+{ id: 'lgg', grp: 'ინტრააქსიალური სიმსივნეები', ka: 'დიფუზური ასტროციტომა', sub: 'IDH-მუტანტური · მარცხენა კუნძული/საფეთქელი', en: 'Astrocytoma, IDH-mutant', who: 'WHO CNS5 · გრადაცია 2', mod: 'flair', plane: 'ax',
+  comps: [
+    { at: [0.034, 1.64, 0.006], r: [.014, .019, .022], irr: .08, main: true, label: 'ასტროციტომა', v: IV(.33, .32, .34, .36, .37, .86, .84, .42, .66, .22, .5, .01) },
+    { at: [0.034, 1.64, 0.006], r: [.0118, .016, .019], irr: .08, v: IV(.33, .32, .34, .36, .37, .88, .48, .4, .7, .22, .55, .01) },
+  ],
+  find: {
+    ct: 'მცირედ ჰიპოდენსიური, ცუდად შემოსაზღვრული უბანი, მცირე მასის ეფექტით. კალციფიკაცია უფრო ოლიგოდენდროგლიომას ახასიათებს.',
+    ctb: 'ძვლის ცვლილება არ არის.',
+    ctc: 'კონტრასტირება, როგორც წესი, არ არის. დაკვირვებისას ახალი კონტრასტირება ანაპლაზიურ ტრანსფორმაციაზე მიუთითებს.',
+    t1: 'ჰომოგენურად ჰიპოინტენსიური; ხვეულები გაფართოებულია.',
+    t1c: 'არ კონტრასტირდება — „არაკონტრასტირებადი" გლიომა არ ნიშნავს კეთილთვისებიანს.',
+    t2: 'ჰომოგენურად, თითქმის ერთგვაროვნად ჰიპერინტენსიური.',
+    flair: 'T2-FLAIR შეუსაბამობის ნიშანი (T2-FLAIR mismatch): T2-ზე სიმსივნე ერთგვაროვნად კაშკაშაა, FLAIR-ზე ცენტრი შედარებით მუქია და კიდეს კაშკაშა ზოლი აკრავს. ნიშანი ძალიან სპეციფიკურია IDH-მუტანტური, 1p/19q-არაკოდელეციური ასტროციტომისთვის, თუმცა მგრძნობელობა დაბალია. შეადარეთ T2-ს.',
+    dwi: 'დიფუზია შეზღუდული არ არის (ADC მაღალი) — დაბალი უჯრედულობა.',
+    fdg: 'შთანთქმა თეთრი ნივთიერების დონეზეა ან ნაკლები: FDG დაბალი ხარისხის გლიომას ცუდად ავლენს. FDG-ის „ცხელი" უბნის გაჩენა ანაპლაზიურ კერაზე მიუთითებს.',
+    fet: 'ზომიერად მომატებული შთანთქმა დაბალ ფონზე, თუმცა დაბალი ხარისხის გლიომების დაახლოებით მესამედი FET-უარყოფითია. ყველაზე ცხელი უბანი ბიოფსიის ოპტიმალური სამიზნეა (შესაძლო ანაპლაზიური კერა).',
+    dota: 'შთანთქმა არ არის.',
+  },
+  key: ['T2/FLAIR ჰიპერინტენსიური, არაკონტრასტირებადი, შუბლის/საფეთქლის/კუნძულის მიდამოში; ახალგაზრდა ზრდასრული, ხშირად გულყრით', 'T2-FLAIR mismatch → IDH-მუტანტური ასტროციტომა', 'დიაგნოზი მოლეკულურია: IDH, 1p/19q, ATRX, CDKN2A/B', 'ვორასიდენიბი (Vorasidenib), IDH1/2 ინჰიბიტორი: გრადაცია 2 IDH-მუტანტური გლიომა ოპერაციის შემდეგ (INDIGO, 2023)'],
+  refs: [['T2-FLAIR mismatch sign (Patel 2017)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Patel+2017+T2-FLAIR+mismatch+IDH-mutant+1p19q+intact'], ['INDIGO trial (Mellinghoff, NEJM 2023)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Mellinghoff+2023+vorasidenib+INDIGO+grade+2+glioma']] },
+{ id: 'pcnsl', grp: 'ინტრააქსიალური სიმსივნეები', ka: 'ცნს-ის პირველადი ლიმფომა', sub: 'DLBCL · პერივენტრიკულური, კორპუს კალოზუმი', en: 'Primary CNS lymphoma (DLBCL)', mod: 'adc', plane: 'ax',
+  comps: [
+    { at: [0, 1.646, 0.018], r: [.032, .02, .024], k: 'edema', irr: .2 },
+    { at: [0, 1.646, 0.018], r: [.022, .01, .012], irr: .18, main: true, label: 'ლიმფომა', v: IV(.64, .34, .82, .44, .9, .46, .55, .88, .22, 1, .72, .12) },
+  ],
+  find: {
+    ct: 'პერივენტრიკულური, ხშირად კორპუს კალოზუმის გავლით მოპირდაპირე მხარეს გადასული ჰიპერდენსიური წარმონაქმნი: მაღალი უჯრედულობა და ბირთვ-ციტოპლაზმური შეფარდება.',
+    ctb: 'ძვლის ცვლილება არ არის.',
+    ctc: 'ჰომოგენური, ინტენსიური კონტრასტირება; იმუნოკომპეტენტურ პაციენტში ნეკროზი იშვიათია.',
+    t1: 'იზო-ჰიპოინტენსიური.',
+    t1c: 'ჰომოგენური, „ფუმფულა" (fluffy) კონტრასტირება, ხშირად ეპენდიმას ეხება. იმუნოსუპრესიისას (HIV) — რგოლისებრი, ნეკროზით; დიფ. დიაგნოზი ტოქსოპლაზმოზთან.',
+    t2: 'შედარებით იზო-ჰიპოინტენსიური (მჭიდრო უჯრედები, ცოტა თავისუფალი წყალი) — გლიომისგან განმასხვავებელი ნიშანი.',
+    flair: 'ზომიერი შეშუპება; სიმსივნე პერივენტრიკულურ თეთრ ნივთიერებაში ინფილტრირდება.',
+    dwi: 'გამოხატული დიფუზიის შეზღუდვა: DWI კაშკაშაა, ADC დაბალი. ეს ლიმფომის ერთ-ერთი ყველაზე სანდო ნიშანია.',
+    fdg: 'ძალიან მაღალი შთანთქმა, ჩვეულებრივ გლიობლასტომაზე მეტი. კორტიკოსტეროიდები შთანთქმას და კონტრასტირებას სწრაფად ამცირებს („მოჩვენება სიმსივნე"). მთელი სხეულის FDG PET-CT სისტემური ლიმფომის გამოსარიცხად ტარდება.',
+    fet: 'მაღალი შთანთქმა, თუმცა დიაგნოზისთვის FDG უფრო ინფორმაციულია.',
+    dota: 'კლინიკური როლი არ აქვს.',
+  },
+  key: ['ჰომოგენური კონტრასტირება + დიფუზიის შეზღუდვა + T2-ზე შედარებით მუქი + პერივენტრიკულური მდებარეობა', 'ბიოფსიამდე სტეროიდები, თუ კლინიკურად შესაძლებელია, არ ინიშნება: ლიმფოლიზი დიაგნოზს ართულებს', 'დიაგნოზი — სტერეოტაქსიური ბიოფსია (არა რეზექცია); სტადირება: თვალის გამოკვლევა, ლიქვორი, მთელი სხეულის PET-CT, HIV', 'მაღალდოზიანი მეთოტრექსატი (Methotrexate): ლეიკოვორინის (Leucovorin) „გადარჩენა", ჰიდრატაცია, შარდის ალკალიზაცია, დონის მონიტორინგი; ურთიერთქმედებები: PPI, NSAID, პენიცილინები, ტრიმეთოპრიმ-სულფამეთოქსაზოლი'],
+  refs: [['EANO guideline: primary CNS lymphoma (Hoang-Xuan 2023)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Hoang-Xuan+2023+EANO+guidelines+primary+central+nervous+system+lymphoma']] },
+{ id: 'mets', grp: 'ინტრააქსიალური სიმსივნეები', ka: 'მეტასტაზები', sub: 'მრავლობითი · რუხი-თეთრის საზღვარი, ნათხემი', en: 'Brain metastases', mod: 't1c', plane: 'ax', slice: 1.64,
+  comps: [
+    { at: [0.035, 1.64, -0.075], r: .018, k: 'edema', irr: .25 }, { at: [-0.04, 1.665, 0.03], r: .02, k: 'edema', irr: .25 }, { at: [0.025, 1.585, -0.06], r: .015, k: 'edema', irr: .25 },
+    { at: [0.035, 1.64, -0.075], r: .0065, irr: .12, main: true, label: 'მეტასტაზი', v: MET_ENH }, { at: [0.035, 1.64, -0.075], r: .0035, v: MET_NEC },
+    { at: [-0.04, 1.665, 0.03], r: .0075, irr: .12, v: MET_ENH }, { at: [-0.04, 1.665, 0.03], r: .004, v: MET_NEC },
+    { at: [0.025, 1.585, -0.06], r: .006, irr: .12, v: MET_ENH }, { at: [0.025, 1.585, -0.06], r: .003, v: MET_NEC },
+  ],
+  find: {
+    ct: 'რამდენიმე მცირე იზო/ჰიპერდენსიური კერა რუხი და თეთრი ნივთიერების საზღვარზე, არაპროპორციულად ფართო შეშუპებით. მცირე კერები უკონტრასტო CT-ზე შეიძლება არ ჩანდეს.',
+    ctb: 'ძვლის მეტასტაზის ნიშანი ამ ჭრილზე არ არის; ლიზისური კერები ძვლის ფანჯარაში ფასდება.',
+    ctc: 'რგოლისებრი ან კვანძოვანი კონტრასტირება; კონტრასტული CT MRI-ზე ნაკლებად მგრძნობიარეა.',
+    t1: 'მცირე ჰიპოინტენსიური კერები. მელანომის (მელანინი) და ჰემორაგიული მეტასტაზები (თირკმელი, ფარისებრი ჯირკვალი, ქორიოკარცინომა) T1-ზე შეიძლება კაშკაშა იყოს.',
+    t1c: 'მრავლობითი რგოლისებრი/კვანძოვანი კონტრასტირებადი კერა რუხი-თეთრის საზღვარზე და სისხლძარღვთა აუზების საზღვრებზე, ნათხემის ჩათვლით. სტადირებისთვის — თხელშრიანი 3D T1+Gd (გადაახვიეთ ჭრილები: კერები სამ დონეზეა).',
+    t2: 'კერების გარშემო T2-ჰიპერინტენსიური შეშუპება.',
+    flair: 'შეშუპება მცირე კერასთან შედარებით არაპროპორციულად დიდია — მეტასტაზის ტიპური ნიშანი.',
+    dwi: 'როგორც წესი, შეზღუდვის გარეშე; ჩირქოვანი აბსცესისგან განსხვავებით ცენტრი DWI-ზე არ არის კაშკაშა.',
+    fdg: 'თავის ტვინში შთანთქმა ცვლადია და ფონზე ცუდად გამოირჩევა. მთავარი როლი: მთელი სხეულის FDG PET-CT პირველადი სიმსივნის (ფილტვი, ძუძუ, მელანომა, თირკმელი…) და სხვა მეტასტაზების საძიებლად.',
+    fet: 'სტერეოტაქსიური რადიოქირურგიის შემდეგ ეხმარება რეციდივის გარჩევაში რადიონეკროზისგან.',
+    dota: 'შთანთქმა მხოლოდ ნეიროენდოკრინული წარმოშობის მეტასტაზებშია.',
+  },
+  key: ['ზრდასრულებში ყველაზე ხშირი ინტრაკრანიული სიმსივნე', 'მრავლობითი კერა რუხი-თეთრის საზღვარზე; ზრდასრულში ახალი ნათხემის სიმსივნე მეტასტაზად ითვლება, სანამ საწინააღმდეგო არ დამტკიცდება', 'MRI T1+Gd ყველაზე მგრძნობიარეა; FDG PET-CT პირველად წყაროს ეძებს', 'ერთეული კერისას დიფ. დიაგნოზი: გლიობლასტომა, აბსცესი'],
+  refs: [['EANO-ESMO guideline: brain metastases (Le Rhun 2021)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Le+Rhun+2021+EANO+ESMO+clinical+practice+guidelines+brain+metastasis']] },
+{ id: 'men', grp: 'ექსტრააქსიალური სიმსივნეები', ka: 'მენინგიომა', sub: 'მარცხენა თხემის კონვექსიტალური', en: 'Convexity meningioma', who: 'WHO CNS5 · გრადაცია 1', mod: 't1c', plane: 'cor',
+  comps: [
+    { at: { snap: 'left parietal bone', to: [0.066, 1.69, -0.03], out: -0.032 }, r: .02, k: 'edema', irr: .2 },
+    { at: { snap: 'left parietal bone', to: [0.066, 1.69, -0.03], out: -0.0045 }, n: 'skull', t: .0042, r: [.016], bone: true, v: IV(1, 1, 1, .1, .12, .06, .06, .03, .05, .03, .02, .35) },
+    { at: { snap: 'left parietal bone', to: [0.066, 1.69, -0.03], out: -0.0085 }, n: 'skull', t: .0013, r: [.028], v: IV(.5, .4, .75, .45, .85, .5, .5, .45, .45, .25, .35, .65) },
+    { at: MEN_AT, r: [.015, .015, .015], irr: .06, main: true, label: 'მენინგიომა', v: IV(.6, .42, .85, .45, .92, .6, .56, .5, .45, .35, .5, 1) },
+    { at: { snap: 'left parietal bone', to: [0.066, 1.69, -0.03], out: -0.016 }, r: .0022, v: IV(1, 1, .95, .1, .12, .06, .06, .05, .1, .2, .3, .6) },
+    { at: { snap: 'left parietal bone', to: [0.068, 1.682, -0.026], out: -0.024 }, r: .0018, v: IV(1, 1, .95, .1, .12, .06, .06, .05, .1, .2, .3, .6) },
+  ],
+  find: {
+    ct: 'ექსტრააქსიალური, დურაზე ფართო ფუძით მიმაგრებული, იზო-ჰიპერდენსიური წარმონაქმნი; ხშირია კალციფიკაცია (≈ 20–25%). ტვინსა და სიმსივნეს შორის ჩანს ლიქვორის ზოლი (CSF cleft).',
+    ctb: 'მიმდებარე ძვლის ჰიპეროსტოზი (გასქელება) ძვლის ფანჯარაში კარგად ჩანს; კალციფიკატები — თეთრი წერტილები.',
+    ctc: 'ინტენსიური, ჰომოგენური კონტრასტირება.',
+    t1: 'რუხი ნივთიერების მსგავსი (იზოინტენსიური) სიგნალი; ტვინისგან ლიქვორის და სისხლძარღვების ზოლით არის გამოყოფილი.',
+    t1c: 'ინტენსიური ჰომოგენური კონტრასტირება და „დურის კუდი" (dural tail): სიმსივნის კიდეებიდან დურის გასწვრივ კონტრასტირებადი ზოლი (ტიპური, თუმცა არასპეციფიკური).',
+    t2: 'იზო-ჰიპერინტენსიური; ტვინის მხრიდან ლიქვორის ზოლი ექსტრააქსიალურ მდებარეობას ადასტურებს.',
+    flair: 'მიმდებარე ტვინში შეიძლება იყოს შეშუპება, განსაკუთრებით დიდი ან მაღალი გრადაციის სიმსივნისას.',
+    dwi: 'ჩვეულებრივ შეზღუდვის გარეშე; მკვეთრად დაბალი ADC ატიპიურ ან ანაპლაზიურ (გრადაცია 2–3) მენინგიომაზე მიუთითებს.',
+    fdg: 'შთანთქმა ცვლადია, ხშირად დაბალი; მაღალი FDG მაღალი გრადაციის ნიშანია.',
+    fet: 'ზომიერი შთანთქმა; FET მენინგიომისთვის პირველი არჩევანი არ არის.',
+    dota: 'ძალიან ინტენსიური შთანთქმა (SSTR2) თითქმის ნულოვან ფონზე, ძვლის ინვაზიის ჩათვლით. იდეალურია ნარჩენი სიმსივნის, რეციდივის და ძვლის ინვაზიის შესაფასებლად და დასხივების მოცულობის დასაგეგმად.',
+  },
+  key: ['ექსტრააქსიალური: ფართო დურული ფუძე, CSF cleft, დურის კუდი, ჰიპეროსტოზი', 'ყველაზე ხშირი პირველადი ინტრაკრანიული სიმსივნე; ხშირად შემთხვევითი მიგნება', '⁶⁸Ga-DOTATATE PET რთულ შემთხვევებში (EANO 2021)', 'მცირე, უსიმპტომო მენინგიომა — დაკვირვება MRI-ით'],
+  refs: [['EANO guideline: meningiomas (Goldbrunner 2021)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Goldbrunner+2021+EANO+guideline+diagnosis+treatment+meningiomas'], ['PET imaging in meningiomas: RANO/PET (Galldiks 2017)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Galldiks+2017+PET+imaging+patients+meningioma+RANO']] },
+{ id: 'pit', grp: 'ექსტრააქსიალური სიმსივნეები', ka: 'ჰიპოფიზის მაკროადენომა', sub: 'სელარული/სუპრასელარული', en: 'Pituitary macroadenoma', mod: 't1c', plane: 'cor', slice: 0.003, noPit: true, sim: 'pit', fov: .13, ctr: [0, 1.612, 0.0],
+  comps: [
+    { soft: true, at: [0, 1.605, 0.003], r: [.009, .0085, .0085], main: true, label: 'ადენომა', v: IV(.54, .34, .66, .46, .72, .6, .56, .45, .42, .5, .3, .6) },
+    { soft: true, at: [0, 1.617, 0.004], r: .0065, v: IV(.54, .34, .66, .46, .72, .6, .56, .45, .42, .5, .3, .6) },
+  ],
+  find: {
+    ct: 'სელარული იზოდენსიური წარმონაქმნი; თურქული კეხი გაფართოებულია.',
+    ctb: 'სელის ფსკერის გათხელება და გაფართოება ნელ ზრდაზე მიუთითებს. ტრანსსფენოიდური ოპერაციის დასაგეგმად ფასდება სფენოიდური სინუსის პნევმატიზაცია.',
+    ctc: 'ზომიერი კონტრასტირება. CT ჰიპოფიზისთვის მხოლოდ MRI-ის უკუჩვენებისას გამოიყენება.',
+    t1: 'რუხი ნივთიერების მსგავსი სიგნალი; კორონარულ ჭრილზე „თოვლის კაცის" ფორმა — წელი სელის დიაფრაგმის დონეზეა.',
+    t1c: 'ნორმალურ ჰიპოფიზზე ნელა და სუსტად კონტრასტირდება (მიკროადენომისთვის — დინამიკური T1+Gd). ფასდება: ჯვარედინის კომპრესია და კავერნოზული სინუსის ინვაზია (Knosp-ის სკალა — ICA-ს შემოხვევის ხარისხი).',
+    t2: 'ჰეტეროგენული; შესაძლოა კისტოზური ან ჰემორაგიული უბნები (აპოპლექსია).',
+    flair: 'გამოხატული კომპრესიისას ჯვარედინის და მხედველობის ტრაქტის შეშუპება შეიძლება გამოჩნდეს.',
+    dwi: 'ჩვეულებრივ შეზღუდვის გარეშე; მწვავე აპოპლექსიისას DWI-ზე შეიძლება კაშკაშა იყოს.',
+    fdg: 'შთანთქმა ცვლადია; ხშირად სხვა მიზეზით ჩატარებულ PET-CT-ზე შემთხვევით ვლინდება.',
+    fet: 'კლინიკური როლი არ აქვს. ფუნქციური ადენომის (მაგ., კუშინგის დაავადება) ნარჩენის ან მცირე კერის ლოკალიზაციისთვის გამოიყენება ¹¹C-მეთიონინი.',
+    dota: 'ნორმალური ჰიპოფიზიც და ადენომაც შთანთქავს (SSTR2/SSTR5), ამიტომ დიაგნოსტიკური ღირებულება შეზღუდულია.',
+  },
+  key: ['მთავარი ჭრილები: კორონარული და საგიტალური T1/T1+Gd', 'ზომა: მიკროადენომა < 1 სმ, მაკროადენომა ≥ 1 სმ', 'შეაფასეთ ჯვარედინი, კავერნოზული სინუსი, ღეროს გადაწევა', 'კლინიკური მართვა: „ჩარევა" → ჰიპოფიზის ოპერაცია'],
+  refs: [['Pituitary Society: imaging of pituitary adenomas (review)', 'https://pubmed.ncbi.nlm.nih.gov/?term=MRI+pituitary+adenoma+review+Knosp+cavernous+sinus+invasion']] },
+{ id: 'abscess', grp: 'დიფერენციული დიაგნოზი', ka: 'თავის ტვინის აბსცესი', sub: 'რგოლისებრი წარმონაქმნი · სიმსივნე არ არის', en: 'Brain abscess (ring-enhancing mimic)', mod: 'dwi', plane: 'ax',
+  comps: [
+    { at: [-0.045, 1.62, -0.012], r: .026, k: 'edema', irr: .2 },
+    { at: [-0.045, 1.62, -0.012], r: .0105, irr: .04, main: true, label: 'აბსცესი', v: IV(.48, .33, .75, .5, .88, .22, .35, .4, .5, .55, .35, .05) },
+    { at: [-0.045, 1.62, -0.012], r: .0083, irr: .03, v: IV(.22, .31, .24, .22, .25, .82, .6, .95, .12, .02, .08, .01) },
+  ],
+  find: {
+    ct: 'ჰიპოდენსიური ცენტრი, თხელი იზოდენსიური კაფსულა, გარს შეშუპება.',
+    ctb: 'მოძებნეთ წყარო: მასტოიდიტი, სინუსიტი (ძვლის ეროზია, სითხე).',
+    ctc: 'თხელი, გლუვი, თანაბარი რგოლისებრი კონტრასტირება; კაფსულა ხშირად პარკუჭისკენ (თეთრი ნივთიერების მხარეს) უფრო თხელია.',
+    t1: 'ცენტრი ჰიპოინტენსიურია; კაფსულა შეიძლება მსუბუქად T1-ჰიპერინტენსიური იყოს.',
+    t1c: 'გლუვი, თხელი რგოლი, გლიობლასტომის სქელი და არათანაბარი კიდისგან განსხვავებით.',
+    t2: 'ჩირქი კაშკაშაა, კაფსულა კი T2-ზე მუქი რგოლია (თავისუფალი რადიკალები, კოლაგენი). გარს ძლიერი შეშუპება.',
+    flair: 'ფართო შეშუპება; ცილოვანი შიგთავსი FLAIR-ზე სრულად არ ჩაქრება.',
+    dwi: 'ცენტრში გამოხატული დიფუზიის შეზღუდვა (DWI კაშკაშა, ADC ძალიან დაბალი) ბლანტი ჩირქის გამო. ეს ნეკროზული სიმსივნისგან მთავარი განმასხვავებელი ნიშანია: შეადარეთ გლიობლასტომის DWI-ს.',
+    fdg: 'კაფსულაში ანთებითი შთანთქმა, ცენტრი „ცივია". FDG აქ ცრუ დადებითი შეიძლება იყოს და სიმსივნის და ინფექციის გასარჩევად სანდო არ არის.',
+    fet: 'ანთებითი ქსოვილი ამინომჟავურ ტრაცერსაც ზომიერად შთანთქავს — ცრუ დადებითი შედეგის წყარო.',
+    dota: 'კლინიკური როლი არ აქვს.',
+  },
+  key: ['რგოლისებრი კონტრასტირება + ცენტრში DWI ↑ / ADC ↓ = აბსცესი, სანამ საწინააღმდეგო არ დამტკიცდება', 'T2-ზე მუქი კაფსულა, გლუვი თხელი რგოლი', 'წყარო: ოტოგენური, სინუსოგენური, ჰემატოგენური (ენდოკარდიტი), ტრავმა/ოპერაცია', 'მკურნალობა: ასპირაცია/დრენაჟი + ემპირიული IV ცეფტრიაქსონი (Ceftriaxone) ან ცეფოტაქსიმი + მეტრონიდაზოლი (Metronidazole), რისკის მიხედვით ვანკომიცინი (Vancomycin); ჩვეულებრივ 6–8 კვირა'],
+  refs: [['ESCMID guideline: brain abscess (Bodilsen 2024)', 'https://pubmed.ncbi.nlm.nih.gov/?term=Bodilsen+2024+ESCMID+guidelines+brain+abscess']] },
+];
+window.IMG_MODS = IMG_MODS; window.IMG_CASES = IMG_CASES;
+
+/* კვლევები: CT / MRI / PET-CT ჭრილები, აგებული BodyParts3D-ის 3D მოდელიდან.
+   ჭრილი = ორთოგრაფიული კამერა + clipping plane; თითოეული ქსოვილის ჯგუფისთვის ზედაპირების გადაკვეთის
+   ლუწ-კენტობა (parity) სხივის გასწვრივ → შიგნით/გარეთ ნიღაბი. ნიღბები → ქსოვილის ეტიკეტი → მოდალობის
+   ინტენსივობა (IMG_BASE, IMG_CASES-ის კომპონენტები) → ხმაური, ნაწილობრივი მოცულობა, PET-ის შერწყმა. */
+window.createImaging = function (D) {
+  const { R, scene, ALL, fxRoot, anchor, esc } = D;
+  const N = 320, SIZE0 = 0.21, HC0 = new THREE.Vector3(0, 1.632, -0.012);
+  let SIZE = SIZE0, HC = HC0.clone();
+  const RANGE = { ax: [1.55, 1.725], cor: [-0.112, 0.085], sag: [-0.075, 0.075] };
+  R.localClippingEnabled = true;
+  const RT = new THREE.WebGLRenderTarget(N, N, { depthBuffer: false });
+  const buf = new Uint8Array(N * N * 4);
+  const ocam = new THREE.OrthographicCamera(-SIZE0 / 2, SIZE0 / 2, SIZE0 / 2, -SIZE0 / 2, 0.0001, 3);
+  const plane = new THREE.Plane();
+  // each surface crossing beyond the plane adds 1/255 → odd count = inside (independent of winding)
+  const mat = new THREE.ShaderMaterial({ side: THREE.DoubleSide, clipping: true, clippingPlanes: [plane], depthTest: false, depthWrite: false, transparent: true,
+    blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor,
+    vertexShader: '#include <clipping_planes_pars_vertex>\nvoid main(){\n#include <begin_vertex>\n#include <project_vertex>\n#include <clipping_planes_vertex>\n}',
+    fragmentShader: '#include <clipping_planes_pars_fragment>\nvoid main(){\n#include <clipping_planes_fragment>\ngl_FragColor=vec4(1.0/255.0,0.0,0.0,0.0);\n}' });
+
+  const G = m => m.userData.g, L = m => m.userData.lname;
+  const GM_DEEP = /caudate|putamen|pallidus|thalamus|hippocamp|amygdala|parahippocampal|hypothalamus|geniculate|colliculus/;
+  const WM_DEEP = /white matter|corpus callosum|internal capsule|fornix|commissure/;
+  const LAYERS = [
+    ['skin', m => G(m) === 'skin'],
+    ['bone', m => G(m) === 'bone'],
+    ['ctx', m => G(m) === 'cortex'],
+    ['cb', m => G(m) === 'cerebellum'],
+    ['wm', m => (G(m) === 'deep' && WM_DEEP.test(L(m))) || G(m) === 'stem'],
+    ['dgm', m => G(m) === 'deep' && GM_DEEP.test(L(m))],
+    ['vent', m => G(m) === 'ventricle' || /cerebral aqueduct/.test(L(m))],
+  ];
+  // tissue labels
+  const T = { air: 0, soft: 1, bone: 2, csf: 3, gm: 4, wm: 5, dgm: 6, cb: 7, edema: 8 };
+  const MODS = ['ct', 'ctb', 'ctc', 't1', 't1c', 't2', 'flair', 'dwi', 'adc', 'fdg', 'fet', 'dota'];
+  const BASEV = [ // ct ctb ctc t1 t1c t2 flair dwi adc fdg fet dota
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [.48, .34, .52, .55, .58, .45, .4, .15, .35, .12, .12, .04],
+    [1, .95, 1, .1, .12, .06, .06, .03, .05, .03, .02, .02],
+    [.12, .3, .14, .08, .1, .95, .06, .05, .95, 0, 0, 0],
+    [.55, .33, .57, .45, .47, .58, .52, .45, .42, .78, .18, .01],
+    [.43, .32, .45, .66, .67, .36, .4, .4, .38, .28, .13, .01],
+    [.53, .33, .55, .5, .52, .48, .48, .43, .4, .85, .18, .01],
+    [.52, .33, .55, .52, .54, .52, .48, .43, .41, .62, .16, .01],
+    [.3, .31, .31, .38, .39, .85, .88, .38, .65, .18, .12, .02],
+  ];
+  const noise = new Float32Array(N * N); { let s = 12345; for (let i = 0; i < N * N; i++) { let a = 0; for (let k = 0; k < 4; k++) { s = (s * 16807) % 2147483647; a += s / 2147483647; } noise[i] = a - 2; } }
+
+  function frame(pl, s) {
+    ocam.left = ocam.bottom = -SIZE / 2; ocam.right = ocam.top = SIZE / 2;
+    const c = HC.clone(), r = new THREE.Vector3(), u = new THREE.Vector3();
+    if (pl === 'ax') { c.y = s; r.set(1, 0, 0); u.set(0, 0, 1); ocam.position.set(c.x, s - 1, c.z); plane.set(new THREE.Vector3(0, 1, 0), -s); }
+    else if (pl === 'cor') { c.z = s; r.set(1, 0, 0); u.set(0, 1, 0); ocam.position.set(c.x, c.y, s + 1); plane.set(new THREE.Vector3(0, 0, -1), s); }
+    else { c.x = s; r.set(0, 0, -1); u.set(0, 1, 0); ocam.position.set(s + 1, c.y, c.z); plane.set(new THREE.Vector3(-1, 0, 0), s); }
+    ocam.up.copy(u); ocam.lookAt(c); ocam.updateMatrixWorld(); ocam.updateProjectionMatrix();
+    return { c, r, u };
+  }
+  // pixel (i, j) with j counted from the top → world point
+  const world = (F, i, j, out) => out.copy(F.c).addScaledVector(F.r, ((i + .5) / N - .5) * SIZE).addScaledVector(F.u, (.5 - (j + .5) / N) * SIZE);
+
+  function masks(pl, s) {
+    const F = frame(pl, s), vis = ALL.map(m => m.visible), fxv = fxRoot.visible, bg = scene.background, cc = R.getClearColor(new THREE.Color()), ca = R.getClearAlpha();
+    fxRoot.visible = false; scene.background = null; scene.overrideMaterial = mat;
+    const out = {};
+    R.setRenderTarget(RT); R.setClearColor(0x000000, 0);
+    for (const [k, f] of LAYERS) {
+      ALL.forEach(m => { m.visible = f(m); });
+      R.clear(); R.render(scene, ocam); R.readRenderTargetPixels(RT, 0, 0, N, N, buf);
+      const a = new Uint8Array(N * N);
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) a[(N - 1 - y) * N + x] = buf[(y * N + x) * 4] & 1; // flip to top-down rows
+      out[k] = a;
+    }
+    R.setRenderTarget(null); R.setClearColor(cc, ca);
+    ALL.forEach((m, i) => { m.visible = vis[i]; }); fxRoot.visible = fxv; scene.background = bg; scene.overrideMaterial = null;
+    return { F, M: out };
+  }
+  function labels(M) {
+    const lab = new Uint8Array(N * N), ext = new Uint8Array(N * N), st = [];
+    // extracranial = non-bone pixels reachable from the image border
+    for (let i = 0; i < N; i++) for (const p of [i, (N - 1) * N + i, i * N, i * N + N - 1]) if (!M.bone[p] && !ext[p]) { ext[p] = 1; st.push(p); }
+    while (st.length) { const p = st.pop(), x = p % N, y = (p / N) | 0;
+      for (const q of [x > 0 ? p - 1 : -1, x < N - 1 ? p + 1 : -1, y > 0 ? p - N : -1, y < N - 1 ? p + N : -1]) if (q >= 0 && !ext[q] && !M.bone[q]) { ext[q] = 1; st.push(q); } }
+    for (let p = 0; p < N * N; p++) {
+      let t = M.skin[p] ? T.soft : T.air;
+      if (!ext[p]) t = T.csf;
+      if (M.bone[p]) t = T.bone;
+      if (M.ctx[p]) t = T.gm;
+      if (M.cb[p]) t = T.cb;
+      if (M.wm[p]) t = T.wm;
+      if (M.dgm[p]) t = T.dgm;
+      if (M.vent[p]) t = T.csf;
+      lab[p] = t;
+    }
+    return lab;
+  }
+
+  // ---- lesion components: {at, r:[x,y,z] | number, n (thin axis, for dural tail), t, irr, k:'edema'|..., v:[12 values]}
+  const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+  function prepComps(cs) { return (cs || []).map(c => { const at = anchor(c.at); const r = Array.isArray(c.r) ? c.r : [c.r, c.r, c.r];
+    let n = null; if (c.n) n = (c.n === 'skull' ? at.clone().sub(HC) : new THREE.Vector3(...c.n)).normalize();
+    return Object.assign({}, c, { P: at, R: r, Nn: n }); }); }
+  function inside(c, p) {
+    const d = tmp.copy(p).sub(c.P);
+    let q;
+    if (c.Nn) { const dn = d.dot(c.Nn); tmp2.copy(d).addScaledVector(c.Nn, -dn); q = (dn / c.t) ** 2 + tmp2.lengthSq() / (c.R[0] ** 2); }
+    else q = (d.x / c.R[0]) ** 2 + (d.y / c.R[1]) ** 2 + (d.z / c.R[2]) ** 2;
+    if (q > 2.2) return false;
+    const L = d.length() || 1e-9, irr = c.irr || 0;
+    const w = 1 + irr * Math.sin(d.x / L * 5.3 + 1.1) * Math.sin(d.y / L * 4.1 + .4) * Math.sin(d.z / L * 6.2 + 2.3) + irr * .5 * Math.sin(d.x / L * 11 + d.z / L * 9);
+    return q < w * w;
+  }
+  function intensities(lab, F, comps, mod) {
+    const mi = MODS.indexOf(mod), I = new Float32Array(N * N), cl = new Int16Array(N * N).fill(-1), p = new THREE.Vector3();
+    for (let i = 0; i < N * N; i++) I[i] = BASEV[lab[i]][mi];
+    if (comps.length) {
+      // bounding test per component in the slice to skip work
+      const live = comps.filter(c => { const r = Math.max(...c.R) * 1.6; const d = Math.abs(tmp.copy(c.P).sub(F.c).dot(tmp2.copy(F.r).cross(F.u))); return d < r; });
+      if (live.length) for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+        const k = j * N + i, t = lab[k];
+        world(F, i, j, p);
+        for (let ci = 0; ci < live.length; ci++) { const c = live[ci];
+          if (c.k === 'edema' && t !== T.wm && t !== T.dgm) continue;
+          if (t === T.bone && !c.bone) continue;
+          if ((t === T.soft || t === T.air) && !c.soft) continue;
+          if (inside(c, p)) { cl[k] = ci; I[k] = c.k === 'edema' ? BASEV[T.edema][mi] : c.v[mi]; } }
+      }
+    }
+    return I;
+  }
+  function blur(a, r, pass) {
+    const b = new Float32Array(N * N);
+    for (let it = 0; it < pass; it++) {
+      for (let y = 0; y < N; y++) { let s = 0; for (let x = -r; x <= r; x++) s += a[y * N + Math.min(N - 1, Math.max(0, x))];
+        for (let x = 0; x < N; x++) { b[y * N + x] = s / (2 * r + 1); s += a[y * N + Math.min(N - 1, x + r + 1)] - a[y * N + Math.max(0, x - r)]; } }
+      for (let x = 0; x < N; x++) { let s = 0; for (let y = -r; y <= r; y++) s += b[Math.min(N - 1, Math.max(0, y)) * N + x];
+        for (let y = 0; y < N; y++) { a[y * N + x] = s / (2 * r + 1); s += b[Math.min(N - 1, y + r + 1) * N + x] - b[Math.max(0, y - r) * N + x]; } }
+    }
+    return a;
+  }
+  const HOT = t => { t = Math.max(0, Math.min(1, t)); return [Math.min(1, t * 2.4) * 255, Math.max(0, Math.min(1, t * 2.4 - .9)) * 255, Math.max(0, t * 3 - 2.1) * 255]; };
+  const PET = { fdg: 1, fet: 1, dota: 1 };
+  function image(lab, F, comps, mod) {
+    const img = new ImageData(N, N), d = img.data;
+    if (PET[mod]) {
+      const ctI = blur(intensities(lab, F, comps, 'ct'), 1, 1), U = blur(intensities(lab, F, comps, mod), 3, 3);
+      const mx = mod === 'fdg' ? .9 : mod === 'fet' ? .75 : .8;
+      for (let i = 0; i < N * N; i++) { const g = (.12 + ctI[i] * .55) * 255, u = U[i] / mx, h = HOT(u), a = Math.min(1, u * 1.6);
+        d[i * 4] = g + (h[0] - g) * a; d[i * 4 + 1] = g + (h[1] - g) * a; d[i * 4 + 2] = g + (h[2] - g) * a; d[i * 4 + 3] = 255; }
+    } else {
+      const I = blur(intensities(lab, F, comps, mod), 1, 1), sg = /^ct/.test(mod) ? .018 : mod === 'dwi' || mod === 'adc' ? .035 : .022;
+      for (let i = 0; i < N * N; i++) { let v = I[i]; if (v > .02 || mod !== 'ctb') v += noise[i] * sg * (lab[i] === T.air ? .4 : 1); v = Math.max(0, Math.min(1, v)) * 255; d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = v; d[i * 4 + 3] = 255; }
+    }
+    return img;
+  }
+
+  // ---------------------------------------------------------------- viewer state & UI
+  const CASES = window.IMG_CASES, MODINFO = window.IMG_MODS;
+  let on = false, cur = CASES[0], mod = 't1c', pl = 'ax', s = 1.645, cache = null, dirty = true, ann = true, loc = null;
+  const wrap = document.getElementById('imgWrap'), cv = document.getElementById('imgCv'), g = cv.getContext('2d'), off = document.createElement('canvas'); off.width = off.height = N;
+  const og = off.getContext('2d');
+  const sl = document.getElementById('imgSlice');
+  function setCase(c) { cur = c; SIZE = c.fov || SIZE0; HC = c.ctr ? new THREE.Vector3(...c.ctr) : HC0.clone(); pl = c.plane || 'ax'; mod = c.mod || 't1c'; s = c.slice != null ? c.slice : pl === 'ax' ? lesY() : pl === 'cor' ? lesC().z : lesC().x; s = Math.min(RANGE[pl][1], Math.max(RANGE[pl][0], s)); cache = null; loc = null; dirty = true; syncBar(); }
+  function syncBar() {
+    const [a, b] = RANGE[pl]; sl.min = 0; sl.max = Math.round((b - a) / .002); sl.value = Math.round((s - a) / .002);
+    wrap.querySelectorAll('[data-pl]').forEach(x => x.setAttribute('aria-pressed', x.dataset.pl === pl));
+    const an = wrap.querySelector('#imgAnn'); if (an) an.setAttribute('aria-pressed', ann);
+  }
+  sl.addEventListener('input', () => { s = RANGE[pl][0] + sl.value * .002; cache = null; dirty = true; });
+  wrap.addEventListener('click', e => { const b = e.target.closest('[data-pl]'); if (b) { pl = b.dataset.pl; s = pl === 'ax' ? (cur.slice && cur.plane === 'ax' ? cur.slice : lesY()) : pl === 'cor' ? lesC().z : lesC().x; s = Math.min(RANGE[pl][1], Math.max(RANGE[pl][0], s)); cache = null; loc = null; dirty = true; syncBar(); }
+    if (e.target.id === 'imgAnn') { ann = !ann; dirty = true; syncBar(); } });
+  cv.addEventListener('wheel', e => { if (!on) return; e.preventDefault(); step(e.deltaY > 0 ? -1 : 1); }, { passive: false });
+  addEventListener('keydown', e => { if (!on || /INPUT/.test(document.activeElement.tagName) && document.activeElement !== sl) return; if (e.key === 'ArrowUp') { step(1); e.preventDefault(); } if (e.key === 'ArrowDown') { step(-1); e.preventDefault(); } });
+  function step(k) { const [a, b] = RANGE[pl]; s = Math.min(b, Math.max(a, s + k * .002)); cache = null; dirty = true; syncBar(); }
+  const lesC = () => { const c = (cur.comps || []).find(x => x.main); return c ? anchor(c.at) : HC.clone().setY(1.645); };
+  const lesY = () => lesC().y;
+
+  function render() {
+    if (!cache) { const r = masks(pl, s); cache = { F: r.F, lab: labels(r.M), comps: prepComps((cur.comps || []).concat(cur.noPit ? [] : [PIT])) }; }
+    og.putImageData(image(cache.lab, cache.F, cache.comps, mod), 0, 0);
+    if (!loc) loc = locator();
+    draw();
+  }
+  const PIT = { soft: true, at: [0, 1.602, 0.002], r: [.0055, .003, .0045], v: [.52, .33, .62, .47, .85, .55, .52, .45, .42, .35, .2, .55] };
+  function locator() { // scout view: midline sagittal (or axial for sagittal slices), T1
+    const lp = pl === 'sag' ? 'ax' : 'sag', ls = lp === 'sag' ? 0 : 1.64, sv = [SIZE, HC]; SIZE = SIZE0; HC = HC0.clone(); const r = masks(lp, ls), lab = labels(r.M); SIZE = sv[0]; HC = sv[1];
+    const c = document.createElement('canvas'); c.width = c.height = N; c.getContext('2d').putImageData(image(lab, r.F, [], 't1'), 0, 0); return { c, lp };
+  }
+  function draw() {
+    const W = cv.width, H = cv.height, dpr = cv._dpr || 1; g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(off, 0, 0, W, H);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); const w = W / dpr, h = H / dpr;
+    const PL = { ax: ['A', 'P', 'R', 'L', 'აქსიალური'], cor: ['S', 'I', 'R', 'L', 'კორონარული'], sag: ['S', 'I', 'A', 'P', 'საგიტალური'] }[pl];
+    g.font = '600 13px "IBM Plex Mono",monospace'; g.fillStyle = '#e6c46e'; g.textAlign = 'center';
+    g.fillText(PL[0], w / 2, 18); g.fillText(PL[1], w / 2, h - 8); g.textAlign = 'left'; g.fillText(PL[2], 8, h / 2); g.textAlign = 'right'; g.fillText(PL[3], w - 8, h / 2);
+    g.textAlign = 'left'; g.font = '500 12px "IBM Plex Mono",monospace'; g.fillStyle = '#ece6da';
+    g.fillText(MODINFO[mod].short, 10, 20); g.fillStyle = '#8a9199'; g.font = '11px "Noto Sans Georgian",sans-serif';
+    const [a, b] = RANGE[pl]; g.fillText(`${PL[4]} · ${Math.round((s - a) / .002) + 1}/${Math.round((b - a) / .002) + 1}`, 10, 36);
+    // localizer inset
+    if (loc && w > 300) { const z = Math.round(Math.min(110, w * .22)), x0 = w - z - 8, y0 = 8; g.globalAlpha = .9; g.drawImage(loc.c, x0, y0, z, z); g.globalAlpha = 1; g.strokeStyle = 'rgba(236,230,218,.35)'; g.strokeRect(x0 + .5, y0 + .5, z, z);
+      g.strokeStyle = '#e6c46e'; g.lineWidth = 1.5; g.beginPath();
+      if (loc.lp === 'sag') { if (pl === 'ax') { const t = (.5 - (s - HC0.y) / SIZE0) * z; g.moveTo(x0, y0 + t); g.lineTo(x0 + z, y0 + t); } else { const t = (.5 - (s - HC0.z) / SIZE0) * z; g.moveTo(x0 + t, y0); g.lineTo(x0 + t, y0 + z); } }
+      else { const t = (.5 + (s - HC0.x) / SIZE0) * z; g.moveTo(x0 + t, y0); g.lineTo(x0 + t, y0 + z); }
+      if (SIZE < SIZE0) { const k = z / SIZE0, F = cache && cache.F; if (F) { const cx = (F.c.dot(loc.lp === 'sag' ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(1, 0, 0)) - (loc.lp === 'sag' ? -HC0.z : HC0.x)) * k + z / 2, cy = (loc.lp === 'sag' ? (HC0.y - F.c.y) : (HC0.z - F.c.z)) * k + z / 2; g.stroke(); g.strokeStyle = 'rgba(107,155,224,.9)'; g.beginPath(); g.rect(x0 + cx - SIZE * k / 2, y0 + cy - SIZE * k / 2, SIZE * k, SIZE * k); } }
+      g.stroke(); g.lineWidth = 1; }
+    // PET colour bar
+    if (PET[mod]) { const x0 = w - 22, y0 = h * .3, bh = h * .4; for (let i = 0; i < bh; i++) { const c = HOT(1 - i / bh); g.fillStyle = `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`; g.fillRect(x0, y0 + i, 10, 1.2); }
+      g.fillStyle = '#8a9199'; g.font = '10px "IBM Plex Mono",monospace'; g.textAlign = 'right'; g.fillText('SUV', x0 + 10, y0 - 6); g.textAlign = 'left'; }
+    // annotation arrow to the main lesion
+    if (ann && cache) { for (const c of cache.comps) { if (!c.main) continue; const F = cache.F, d = tmp.copy(c.P).sub(F.c), n = tmp2.copy(F.r).cross(F.u), dist = Math.abs(d.dot(n)); if (dist > Math.max(...c.R) * .9) continue;
+      const px = (d.dot(F.r) / SIZE + .5) * w, py = (.5 - d.dot(F.u) / SIZE) * h, rr = Math.max(...c.R) / SIZE * w + 8, ang = -Math.PI / 4 + (px > w / 2 ? -Math.PI / 2 : 0);
+      const ex = px + Math.cos(ang) * rr, ey = py + Math.sin(ang) * rr, sx = px + Math.cos(ang) * (rr + 34), sy = py + Math.sin(ang) * (rr + 34);
+      g.strokeStyle = '#e6c46e'; g.fillStyle = '#e6c46e'; g.lineWidth = 2; g.beginPath(); g.moveTo(sx, sy); g.lineTo(ex, ey); g.stroke();
+      const hA = Math.atan2(ey - sy, ex - sx); g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex - 9 * Math.cos(hA - .4), ey - 9 * Math.sin(hA - .4)); g.lineTo(ex - 9 * Math.cos(hA + .4), ey - 9 * Math.sin(hA + .4)); g.fill(); g.lineWidth = 1;
+      if (c.label) { g.font = '600 12px "Noto Sans Georgian",sans-serif'; g.textAlign = sx > px ? 'left' : 'right'; g.fillText(c.label, sx + (sx > px ? 4 : -4), sy - 4); g.textAlign = 'left'; } } }
+  }
+  function layout(rect) {
+    if (!rect) return; const bar = 44, sz = Math.max(160, Math.floor(Math.min(rect.w, rect.h - bar)));
+    Object.assign(wrap.style, { left: Math.round(rect.x + (rect.w - sz) / 2) + 'px', top: Math.round(rect.y + Math.max(0, (rect.h - bar - sz) / 2)) + 'px', width: sz + 'px' });
+    const dpr = Math.min(devicePixelRatio, 2); cv.style.width = cv.style.height = sz + 'px'; if (cv.width !== sz * dpr) { cv.width = cv.height = sz * dpr; cv._dpr = dpr; } dirty = true;
+  }
+
+  // ---------------------------------------------------------------- panels
+  function renderLeft(Lb) {
+    document.getElementById('leftTitle').textContent = 'კვლევები · შემთხვევები';
+    let grp = '';
+    Lb.innerHTML = '<div class="vlist">' + CASES.map((c, i) => { const h = c.grp !== grp ? `<div class="ngrp">${esc(grp = c.grp)}</div>` : '';
+      return h + `<button class="vitem" type="button" data-img="${c.id}" aria-current="${c === cur}"><span class="dot">${i + 1}</span><span><b>${esc(c.ka)}</b><small>${esc(c.sub)}</small></span></button>`; }).join('') + '</div>';
+  }
+  const MGROUPS = [['CT', ['ct', 'ctb', 'ctc']], ['MRI', ['t1', 't1c', 't2', 'flair', 'dwi', 'adc']], ['PET-CT', ['fdg', 'fet', 'dota']]];
+  function renderRight(B) {
+    const c = cur, mi = MODINFO[mod], fk = mod === 'adc' ? 'dwi' : mod === 'ctb' && !c.find.ctb ? 'ct' : mod;
+    B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>კვლევები</span>${c.who ? `<span>·</span><span class="icd">${esc(c.who)}</span>` : ''}</div><h1>${esc(c.ka)}</h1><div class="en">${esc(c.en)}</div></div>
+      <div class="sec"><h3>კვლევა</h3>${MGROUPS.map(([gname, ms]) => `<div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:6px"><span style="font:500 10.5px var(--mono);color:var(--muted);width:46px">${gname}</span>${ms.map(m => `<button type="button" class="chip" data-mod="${m}" aria-pressed="${m === mod}">${esc(MODINFO[m].chip)}</button>`).join('')}</div>`).join('')}</div>
+      <div class="sec"><div class="stepbox"><h4>${esc(mi.name)}</h4><p>${esc(c.find[fk] || '')}</p></div></div>
+      <div class="sec"><h3>მთავარი ნიშნები</h3><ul>${c.key.map(k => `<li>${esc(k)}</li>`).join('')}</ul>${c.sim ? `<div style="margin-top:8px"><button class="chip" type="button" data-imgsim="${c.sim}">ოპერაციის სიმულაცია →</button></div>` : ''}</div>
+      <div class="sec"><details><summary style="cursor:pointer;color:var(--muted);font:600 11px var(--sans);letter-spacing:.9px;text-transform:uppercase">მეთოდი · ${esc(mi.chip)}</summary><p style="margin-top:8px">${esc(mi.how)}</p>${mi.safe ? `<p><b style="font-weight:600">ფარმაკოლოგია და უსაფრთხოება:</b> ${esc(mi.safe)}</p>` : ''}</details></div>
+      <div class="sec refs"><h3>წყაროები</h3><ul>${(c.refs || []).concat(mi.refs || []).map(([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></li>`).join('')}</ul></div>
+      <p class="disc">სინთეზური, სასწავლო გამოსახულება: ანატომია აგებულია BodyParts3D-ის 3D მოდელის ჭრილიდან, ქსოვილების სიგნალი და დაზიანებები მოდელირებულია ტიპური ნიშნების მიხედვით. ეს არ არის პაციენტის რეალური კვლევა.</p>`;
+  }
+  function onLeft(e) { if (!on) return; const b = e.target.closest('[data-img]'); if (b) { setCase(CASES.find(x => x.id === b.dataset.img)); renderLeft(document.getElementById('leftBody')); renderRight(document.getElementById('rightBody')); D.onCase && D.onCase(); } }
+  function onRight(e) { if (!on) return; const b = e.target.closest('[data-mod]'); if (b) { mod = b.dataset.mod; dirty = true; renderRight(document.getElementById('rightBody')); return; }
+    const sb = e.target.closest('[data-imgsim]'); if (sb) D.openSim(sb.dataset.imgsim); }
+  document.getElementById('leftBody').addEventListener('click', onLeft);
+  document.getElementById('rightBody').addEventListener('click', onRight);
+  setCase(cur);
+  return {
+    enter(id) { on = true; wrap.hidden = false; if (id) { const c = CASES.find(x => x.id === id); if (c && c !== cur) setCase(c); } dirty = true; },
+    leave() { on = false; wrap.hidden = true; },
+    tick() { if (on && dirty) { dirty = false; render(); } },
+    layout, renderLeft, renderRight,
+    state: () => ({ id: cur.id, mod, pl, s }), setMod(m) { mod = m; dirty = true; renderRight(document.getElementById('rightBody')); }, setCaseId(id) { setCase(CASES.find(x => x.id === id)); renderLeft(document.getElementById('leftBody')); renderRight(document.getElementById('rightBody')); },
+  };
+};
+
 </script>
 <script>
 (function () {
@@ -1570,7 +2042,7 @@ const rim = new THREE.DirectionalLight(0xffffff, 0.65); rim.position.set(-0.5, 1
 const back = new THREE.DirectionalLight(0xfff0e0, 0.45); back.position.set(0.5, 1.2, -2); scene.add(back);
 scene.add(cam); cam.add(new THREE.PointLight(0xffffff, 0.22));
 
-let MICRO = null;
+let MICRO = null, IMG = null;
 function resize() {
   const w = innerWidth, h = innerHeight; R.setSize(w, h); cam.aspect = w / h; if (MICRO) MICRO.cam.aspect = w / h;
   layout();
@@ -1584,6 +2056,7 @@ function layout() {
   let ox = 0, oy = 0;
   if (w <= 760) { const lg = document.getElementById('legend').getBoundingClientRect(); const top = Math.max(lg.bottom, 90) + 4, bottom = Math.min(L.top, Rt.top) - 4; oy = Math.round(h / 2 - (top + bottom) / 2); }
   else { const a = L.right + 8, b = Rt.left - 8; ox = Math.round(w / 2 - (a + b) / 2); oy = Rt.height < 120 && L.height < 120 ? 0 : 0; }
+  if (IMG) { const top = 70, bot = 16; IMG.layout(w <= 760 ? (() => { const lg = document.getElementById('legend').getBoundingClientRect(), t = Math.max(lg.bottom, 92) + 4, b = Math.min(L.top, Rt.top) - 6; return { x: 10, y: t, w: w - 20, h: b - t }; })() : { x: L.right + 14, y: top, w: Rt.left - L.right - 28, h: h - top - bot }); }
   for (const c of [cam, MICRO && MICRO.cam]) { if (!c) continue; if (ox || oy) c.setViewOffset(w, h, ox, oy, w, h); else c.clearViewOffset(); c.updateProjectionMatrix(); }
 }
 if (window.ResizeObserver) { const ro = new ResizeObserver(() => layout()); addEventListener('DOMContentLoaded', () => {}); setTimeout(() => { ['left', 'right'].forEach(id => { const el = document.getElementById(id); if (el) ro.observe(el); }); }, 0); }
@@ -1921,6 +2394,7 @@ const PATHO_LEGEND = [['დაზიანების კერა / დაზ�
 function renderLeft() {
   const L = $('#leftBody');
   if (mode === 'sim') return renderSimLeft(L);
+  if (mode === 'img') return IMG.renderLeft(L);
   if (mode === 'micro') {
     $('#leftTitle').textContent = 'ნეირონი · უჯრედული დონე';
     L.innerHTML = '<div class="vlist">' + MICRO.steps.map((v, i) => `<button class="vitem" type="button" data-mi="${i}" aria-current="${i === curMicro}"><span class="dot">${i + 1}</span><span><b>${esc(v.t)}</b><small>${esc(v.sub)}</small></span></button>`).join('') + '</div>';
@@ -1949,6 +2423,7 @@ function layerOn(k) { const v = curView; if (layers[k] != null) return layers[k]
 function renderRight() {
   const B = $('#rightBody');
   if (mode === 'sim') return renderSimRight(B);
+  if (mode === 'img') return IMG.renderRight(B);
   if (mode === 'micro') {
     const s = MICRO.steps[curMicro], n = MICRO.steps.length, chart = /rest|ap|salt/.test(s.id);
     B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>უჯრედული დონე</span><span>·</span><span>ეტაპი ${curMicro + 1}/${n}</span></div><h1>${esc(s.t)}</h1><div class="en">${esc(s.sub)}</div></div>
@@ -2000,12 +2475,14 @@ function setMode(m) {
   if (mode === 'micro' && m !== 'micro') { MICRO.leave(); ctl.enabled = true; }
   if (m !== 'patho') exitPathoMicro();
   if (m !== 'sim') exitSimMicro();
+  if (mode === 'img' && m !== 'img') { IMG.leave(); ctl.enabled = true; }
   mode = m; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
   document.body.dataset.mode = m;
   $('#attr').innerHTML = m === 'micro' ? 'უჯრედული დონე: სქემატური 3D, მასშტაბი პირობითია' : '3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია';
-  tip.hidden = true; $('#attr').hidden = m === 'micro' || m === 'sim';
+  tip.hidden = true; $('#attr').hidden = m === 'micro' || m === 'sim' || m === 'img';
   if (m === 'micro') { ctl.enabled = false; MICRO.ctl.enabled = true; openMicro(curMicro); }
   else if (m === 'sim') openSim(curSim || SIMS[0]);
+  else if (m === 'img') { ctl.enabled = false; clearFx(); IMG.enter(); renderLeft(); renderRight(); setLegend([]); layout(); }
   else if (m === 'norm') showView(curView); else { if (curNoso) openNoso(curNoso, curStep); else { renderLeft(); renderRight(); setLegend(PATHO_LEGEND); clearFx(); baseState(['cortex', 'cerebellum', 'stem', 'cord', 'cranial', 'spinal', 'legs', 'bone', 'skin'], { bone: .15 }); goCam('body'); } }
   try { localStorage.setItem('na-mode', m); } catch (e) {}
 }
@@ -2095,6 +2572,7 @@ const clock = new THREE.Clock(); const tmp = new THREE.Color();
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), .05), now = performance.now(), T = now / 1000;
+  if (mode === 'img') { IMG.tick(); return; }
   if (mode === 'micro' || pathoMicro || simMicro) { const v = MICRO.update(dt); if (typeof v === 'number') drawVm(v); else if (v && v.epp) drawEpp(v); R.render(MICRO.scene, MICRO.cam); return; }
   if (tween) { tween.t = Math.min(1, tween.t + dt / .9); const k = 1 - Math.pow(1 - tween.t, 3);
     ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
@@ -2199,6 +2677,7 @@ $('#leftBody').addEventListener('click', e => { const b = e.target.closest('[dat
 // ---------------------------------------------------------------- boot
 (async function boot() {
   try { await loadPack(); } catch (e) { $('#loadMsg').textContent = 'მოდელის ჩატვირთვა ვერ მოხერხდა. განაახლეთ გვერდი.'; console.error(e); return; }
+  IMG = window.createImaging({ R, scene, ALL, fxRoot, anchor, esc, openSim: id => { setMode('sim'); openSim(SIMS.find(s => s.id === id)); }, onCase: () => { if (isPhone()) setCollapsed('#left', true); } });
   goCam('body'); tween.t = 1; ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null;
   let m0 = 'norm'; try { m0 = localStorage.getItem('na-mode') || 'norm'; } catch (e) {}
   const h = (location.hash || '').slice(1);
@@ -2206,11 +2685,12 @@ $('#leftBody').addEventListener('click', e => { const b = e.target.closest('[dat
   else if (h && NORM.find(n => n.id === h)) { showView(NORM.find(n => n.id === h)); }
   else if (h === 'neuron' || h === 'micro') setMode('micro');
   else if (h === 'sim') setMode('sim');
-  else setMode(m0 === 'patho' || m0 === 'micro' ? m0 : 'norm');
+  else if (h === 'img' || /^img-/.test(h)) { IMG.setCaseId((h.split('-')[1]) || 'normal'); setMode('img'); }
+  else setMode(m0 === 'patho' || m0 === 'micro' || m0 === 'img' ? m0 : 'norm');
   if (isPhone()) { setCollapsed('#left', true); }
   $('#load').classList.add('gone');
   frame();
-  window.__atlas = { simTargetScreen: () => { const st = curSim.steps[simStep]; if (curSim.scene === 'nerve') return (st.nerveTarget || []).map(id => MICRO.nerveScreen(id)).filter(Boolean); const p = anchor(st.target.at).project(cam); return [{ x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight }]; }, openSim: id => openSim(SIMS.find(s => s.id === id)), simState: () => ({ simStep, simDone, simErr }), openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true };
+  window.__atlas = { simTargetScreen: () => { const st = curSim.steps[simStep]; if (curSim.scene === 'nerve') return (st.nerveTarget || []).map(id => MICRO.nerveScreen(id)).filter(Boolean); const p = anchor(st.target.at).project(cam); return [{ x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight }]; }, openSim: id => openSim(SIMS.find(s => s.id === id)), simState: () => ({ simStep, simDone, simErr }), openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true, IMG: () => IMG };
 })();
 })();
 </script>

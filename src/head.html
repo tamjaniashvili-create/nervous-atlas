@@ -38,6 +38,13 @@ a{color:var(--myelin)}
 .mode button[data-m="patho"][aria-pressed="true"]{background:var(--lesion);color:#fff}
 .mode button[data-m="micro"][aria-pressed="true"]{background:#8f78d6;color:#fff}
 .mode button[data-m="sim"][aria-pressed="true"]{background:#2f9e8f;color:#fff}
+.mode button[data-m="img"][aria-pressed="true"]{background:#4f7fc4;color:#fff}
+#imgWrap{position:fixed;z-index:2}
+#imgWrap[hidden]{display:none}
+#imgCv{display:block;border-radius:10px;background:#000;box-shadow:0 10px 40px rgba(0,0,0,.45);touch-action:pan-x}
+.imgbar{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--ink2)}
+.imgbar input[type=range]{flex:1;min-width:60px;accent-color:var(--myelin)}
+body[data-mode="img"] #stage canvas{visibility:hidden}
 .opts{display:flex;flex-direction:column;gap:6px;margin-top:10px}
 .opt{text-align:left;border:1px solid var(--line2);background:rgba(236,230,218,.03);border-radius:9px;padding:9px 11px;cursor:pointer;font-size:13px;line-height:1.4}
 .opt:hover:not(:disabled){border-color:var(--ink2)}
@@ -173,6 +180,7 @@ a{color:var(--myelin)}
     <button type="button" data-m="micro" aria-pressed="false">ნეირონი</button>
     <button type="button" data-m="patho" aria-pressed="false">პათოლოგია</button>
     <button type="button" data-m="sim" aria-pressed="false">ჩარევა</button>
+    <button type="button" data-m="img" aria-pressed="false">კვლევები</button>
   </div>
   <div class="sp"></div>
   <nav class="toplinks">
@@ -190,6 +198,9 @@ a{color:var(--myelin)}
   <div class="scroll" id="rightBody" style="padding:0"></div>
 </aside>
 
+<div id="imgWrap" hidden><canvas id="imgCv" aria-label="კვლევის ჭრილი"></canvas>
+  <div class="imgbar"><button type="button" class="chip" data-pl="ax" aria-pressed="true">აქს.</button><button type="button" class="chip" data-pl="cor" aria-pressed="false">კორ.</button><button type="button" class="chip" data-pl="sag" aria-pressed="false">საგ.</button>
+  <input id="imgSlice" type="range" min="0" max="80" value="40" aria-label="ჭრილის დონე"><button type="button" class="chip" id="imgAnn" aria-pressed="true">ისარი</button></div></div>
 <div id="legend"></div>
 <div id="attr">3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია</div>
 <div id="tip" hidden></div>

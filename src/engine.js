@@ -24,7 +24,7 @@ const rim = new THREE.DirectionalLight(0xffffff, 0.65); rim.position.set(-0.5, 1
 const back = new THREE.DirectionalLight(0xfff0e0, 0.45); back.position.set(0.5, 1.2, -2); scene.add(back);
 scene.add(cam); cam.add(new THREE.PointLight(0xffffff, 0.22));
 
-let MICRO = null;
+let MICRO = null, IMG = null;
 function resize() {
   const w = innerWidth, h = innerHeight; R.setSize(w, h); cam.aspect = w / h; if (MICRO) MICRO.cam.aspect = w / h;
   layout();
@@ -38,6 +38,7 @@ function layout() {
   let ox = 0, oy = 0;
   if (w <= 760) { const lg = document.getElementById('legend').getBoundingClientRect(); const top = Math.max(lg.bottom, 90) + 4, bottom = Math.min(L.top, Rt.top) - 4; oy = Math.round(h / 2 - (top + bottom) / 2); }
   else { const a = L.right + 8, b = Rt.left - 8; ox = Math.round(w / 2 - (a + b) / 2); oy = Rt.height < 120 && L.height < 120 ? 0 : 0; }
+  if (IMG) { const top = 70, bot = 16; IMG.layout(w <= 760 ? (() => { const lg = document.getElementById('legend').getBoundingClientRect(), t = Math.max(lg.bottom, 92) + 4, b = Math.min(L.top, Rt.top) - 6; return { x: 10, y: t, w: w - 20, h: b - t }; })() : { x: L.right + 14, y: top, w: Rt.left - L.right - 28, h: h - top - bot }); }
   for (const c of [cam, MICRO && MICRO.cam]) { if (!c) continue; if (ox || oy) c.setViewOffset(w, h, ox, oy, w, h); else c.clearViewOffset(); c.updateProjectionMatrix(); }
 }
 if (window.ResizeObserver) { const ro = new ResizeObserver(() => layout()); addEventListener('DOMContentLoaded', () => {}); setTimeout(() => { ['left', 'right'].forEach(id => { const el = document.getElementById(id); if (el) ro.observe(el); }); }, 0); }
@@ -375,6 +376,7 @@ const PATHO_LEGEND = [['დაზიანების კერა / დაზ�
 function renderLeft() {
   const L = $('#leftBody');
   if (mode === 'sim') return renderSimLeft(L);
+  if (mode === 'img') return IMG.renderLeft(L);
   if (mode === 'micro') {
     $('#leftTitle').textContent = 'ნეირონი · უჯრედული დონე';
     L.innerHTML = '<div class="vlist">' + MICRO.steps.map((v, i) => `<button class="vitem" type="button" data-mi="${i}" aria-current="${i === curMicro}"><span class="dot">${i + 1}</span><span><b>${esc(v.t)}</b><small>${esc(v.sub)}</small></span></button>`).join('') + '</div>';
@@ -403,6 +405,7 @@ function layerOn(k) { const v = curView; if (layers[k] != null) return layers[k]
 function renderRight() {
   const B = $('#rightBody');
   if (mode === 'sim') return renderSimRight(B);
+  if (mode === 'img') return IMG.renderRight(B);
   if (mode === 'micro') {
     const s = MICRO.steps[curMicro], n = MICRO.steps.length, chart = /rest|ap|salt/.test(s.id);
     B.innerHTML = `<div class="card-h"><div class="eyebrow"><span>უჯრედული დონე</span><span>·</span><span>ეტაპი ${curMicro + 1}/${n}</span></div><h1>${esc(s.t)}</h1><div class="en">${esc(s.sub)}</div></div>
@@ -454,12 +457,14 @@ function setMode(m) {
   if (mode === 'micro' && m !== 'micro') { MICRO.leave(); ctl.enabled = true; }
   if (m !== 'patho') exitPathoMicro();
   if (m !== 'sim') exitSimMicro();
+  if (mode === 'img' && m !== 'img') { IMG.leave(); ctl.enabled = true; }
   mode = m; document.querySelectorAll('.mode button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m));
   document.body.dataset.mode = m;
   $('#attr').innerHTML = m === 'micro' ? 'უჯრედული დონე: სქემატური 3D, მასშტაბი პირობითია' : '3D: <a href="https://dbarchive.biosciencedbc.jp/en/bodyparts3d/" target="_blank" rel="noopener">BodyParts3D</a> © DBCLS, CC BY 4.0 · ქვედა კიდურის ნერვები სქემატურია';
-  tip.hidden = true; $('#attr').hidden = m === 'micro' || m === 'sim';
+  tip.hidden = true; $('#attr').hidden = m === 'micro' || m === 'sim' || m === 'img';
   if (m === 'micro') { ctl.enabled = false; MICRO.ctl.enabled = true; openMicro(curMicro); }
   else if (m === 'sim') openSim(curSim || SIMS[0]);
+  else if (m === 'img') { ctl.enabled = false; clearFx(); IMG.enter(); renderLeft(); renderRight(); setLegend([]); layout(); }
   else if (m === 'norm') showView(curView); else { if (curNoso) openNoso(curNoso, curStep); else { renderLeft(); renderRight(); setLegend(PATHO_LEGEND); clearFx(); baseState(['cortex', 'cerebellum', 'stem', 'cord', 'cranial', 'spinal', 'legs', 'bone', 'skin'], { bone: .15 }); goCam('body'); } }
   try { localStorage.setItem('na-mode', m); } catch (e) {}
 }
@@ -549,6 +554,7 @@ const clock = new THREE.Clock(); const tmp = new THREE.Color();
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), .05), now = performance.now(), T = now / 1000;
+  if (mode === 'img') { IMG.tick(); return; }
   if (mode === 'micro' || pathoMicro || simMicro) { const v = MICRO.update(dt); if (typeof v === 'number') drawVm(v); else if (v && v.epp) drawEpp(v); R.render(MICRO.scene, MICRO.cam); return; }
   if (tween) { tween.t = Math.min(1, tween.t + dt / .9); const k = 1 - Math.pow(1 - tween.t, 3);
     ctl.target.lerpVectors(tween.ft, tween.tt, k); cam.position.lerpVectors(tween.fp, tween.tp, k); if (tween.t >= 1) tween = null; }
@@ -653,6 +659,7 @@ $('#leftBody').addEventListener('click', e => { const b = e.target.closest('[dat
 // ---------------------------------------------------------------- boot
 (async function boot() {
   try { await loadPack(); } catch (e) { $('#loadMsg').textContent = 'მოდელის ჩატვირთვა ვერ მოხერხდა. განაახლეთ გვერდი.'; console.error(e); return; }
+  IMG = window.createImaging({ R, scene, ALL, fxRoot, anchor, esc, openSim: id => { setMode('sim'); openSim(SIMS.find(s => s.id === id)); }, onCase: () => { if (isPhone()) setCollapsed('#left', true); } });
   goCam('body'); tween.t = 1; ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null;
   let m0 = 'norm'; try { m0 = localStorage.getItem('na-mode') || 'norm'; } catch (e) {}
   const h = (location.hash || '').slice(1);
@@ -660,10 +667,11 @@ $('#leftBody').addEventListener('click', e => { const b = e.target.closest('[dat
   else if (h && NORM.find(n => n.id === h)) { showView(NORM.find(n => n.id === h)); }
   else if (h === 'neuron' || h === 'micro') setMode('micro');
   else if (h === 'sim') setMode('sim');
-  else setMode(m0 === 'patho' || m0 === 'micro' ? m0 : 'norm');
+  else if (h === 'img' || /^img-/.test(h)) { IMG.setCaseId((h.split('-')[1]) || 'normal'); setMode('img'); }
+  else setMode(m0 === 'patho' || m0 === 'micro' || m0 === 'img' ? m0 : 'norm');
   if (isPhone()) { setCollapsed('#left', true); }
   $('#load').classList.add('gone');
   frame();
-  window.__atlas = { simTargetScreen: () => { const st = curSim.steps[simStep]; if (curSim.scene === 'nerve') return (st.nerveTarget || []).map(id => MICRO.nerveScreen(id)).filter(Boolean); const p = anchor(st.target.at).project(cam); return [{ x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight }]; }, openSim: id => openSim(SIMS.find(s => s.id === id)), simState: () => ({ simStep, simDone, simErr }), openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true };
+  window.__atlas = { simTargetScreen: () => { const st = curSim.steps[simStep]; if (curSim.scene === 'nerve') return (st.nerveTarget || []).map(id => MICRO.nerveScreen(id)).filter(Boolean); const p = anchor(st.target.at).project(cam); return [{ x: (p.x * .5 + .5) * innerWidth, y: (-p.y * .5 + .5) * innerHeight }]; }, openSim: id => openSim(SIMS.find(s => s.id === id)), simState: () => ({ simStep, simDone, simErr }), openMicro, finishMicro: () => MICRO.finish(), finish: () => { if (tween) { ctl.target.copy(tween.tt); cam.position.copy(tween.tp); tween = null; } }, ALL, NOSOLOGY, NORM, openNoso, setStep, showView, setMode, READY: true, IMG: () => IMG };
 })();
 })();
